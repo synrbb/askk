@@ -6,7 +6,7 @@
 ;; Version: 0.1.0
 ;; Keywords: i18n, text
 ;; URL: https://github.com/synrbb/askk
-;; Package-Requires: ((emacs "30"))
+;; Package-Requires: ((emacs "29.1"))
 
 ;;; Commentary:
 
@@ -828,6 +828,12 @@
 ;;; Completion
 
 (defun askk-completion-at-point ()
+  "前方一致する見出し語を登録順に表示するための capf。
+
+Emacs 29 では compat パッケージを使っても、capf から :display-sort-function
+を効かせることはできず見出し語が `completions-sort' の値によってソートされる。
+ただし補完のために corfu パッケージを使っている場合は、corfu 1.6 では
+corfu から :display-sort-function が使われるため見出し語は登録順に表示される。"
   (and askk-headword--start
        (eq askk--conversion-mode 'composing)
        (let ((start (1+ askk-headword--start))
