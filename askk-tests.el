@@ -171,16 +171,28 @@
          askk-trans--node
          askk-trans--events)
      (with-temp-buffer
+       (askk-mode)
        (funcall ,init-func)
        (askk--output-flush)
        ,@body)))
 
 (defun askk-test-trigger-events (events)
-  (let ((func (alist-get askk--conversion-mode
-                         askk--conversion-mode-handlers)))
-    (seq-doseq (event events)
-      (funcall func event)
-      (askk--output-flush))))
+  (seq-doseq (event events)
+    (setq last-command-event event)
+    (setq this-command (keymap-lookup (askk--current-keymap)
+                                      (single-key-description event)))
+    (command-execute this-command)))
+
+(ert-deftest askk-test-fullwidth-ascii ()
+  (with-askk-test-output-buffer #'askk-fullwidth-ascii-mode
+    (askk-test-trigger-events "a1;!.(")
+    (should (equal (buffer-string) "ａ１；！．（"))))
+
+(ert-deftest askk-test-fullwidth-ascii-electric-pair ()
+  (with-askk-test-output-buffer #'askk-fullwidth-ascii-mode
+    (electric-pair-mode)
+    (askk-test-trigger-events "([{")
+    (should (equal (buffer-string) "（［｛｝］）"))))
 
 (ert-deftest askk-test-handle-normal-sticky ()
   (with-askk-test-output-buffer #'askk-kana--normal

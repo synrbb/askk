@@ -303,11 +303,12 @@
   (interactive)
   (askk--update-input-mode 'katakana))
 
-(defun askk-fullwidth-ascii-insert (arg)
-  (interactive "*P")
-  (insert-char (or (aref askk-fullwidth-ascii-table last-command-event)
-                   last-command-event)
-               arg))
+(defun askk-fullwidth-ascii-insert (n)
+  (interactive "*p")
+  (let ((c (aref askk-fullwidth-ascii-table last-command-event)))
+    (when c
+      (setq last-command-event c))
+    (self-insert-command n c)))
 
 ;;; Output
 
