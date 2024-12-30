@@ -313,6 +313,7 @@
 ;;; Output
 
 (defvar askk--output nil)
+(defvar askk--post-insert-hook nil)
 
 (defun askk--output-commit (obj)
   (when (characterp obj)
@@ -326,8 +327,12 @@
 
 (defun askk--output-flush ()
   (when askk--output
-    (apply #'insert (nreverse askk--output))
-    (setq askk--output nil)))
+    (let ((str (car askk--output)))
+      (apply #'insert (nreverse askk--output))
+      (setq askk--output nil)
+      (unless (string-empty-p str)
+        (setq last-command-event (aref str (1- (length str))))
+        (run-hooks 'askk--post-insert-hook)))))
 
 ;;; Transliteration
 
@@ -881,6 +886,21 @@ corfu から :display-sort-function が使われるため見出し語は登録�
 (defun askk--restore-keymap (window)
   (when (and askk-mode (eq (selected-window) window))
     (askk--enable-keymap (askk--current-keymap))))
+
+(declare-function electric-pair-post-self-insert-function "elec-pair" ())
+
+;;;###autoload
+(define-minor-mode askk-electric-pair-mode
+  "ASKK electric pair mode."
+  :global t
+  (cond
+   (askk-electric-pair-mode
+    (electric-pair-mode)
+    (add-hook 'askk--post-insert-hook
+              #'electric-pair-post-self-insert-function))
+   (t
+    (remove-hook 'askk--post-insert-hook
+                 #'electric-pair-post-self-insert-function))))
 
 (defvar askk-cursor--default-color nil)
 

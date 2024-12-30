@@ -194,6 +194,16 @@
     (askk-test-trigger-events "([{")
     (should (equal (buffer-string) "（［｛｝］）"))))
 
+(ert-deftest askk-test-kana-electric-pair ()
+  (with-askk-test-output-buffer #'askk-kana--normal
+    (with-askk-test-transliteration '(("(" "（") ("z(" "（"))
+      (askk-test-trigger-events "(z([{")
+      (should (equal (buffer-string) "（（[{"))
+      (erase-buffer)
+      (askk-electric-pair-mode)
+      (askk-test-trigger-events "(z([{")
+      (should (equal (buffer-string) "（（[{}]））")))))
+
 (ert-deftest askk-test-handle-normal-sticky ()
   (with-askk-test-output-buffer #'askk-kana--normal
     (askk-test-trigger-events ";")
