@@ -43,11 +43,9 @@
         (push (cons okurigana (list candidate)) (nth 2 entry))))))
 
 (defun askk-user-dict--delete-entry (headword okurigana candidate)
-  (let ((entry (assoc headword askk-user-dict--alist))
-        (delp t)
-        o-entry)
-    (when okurigana
-      (setq o-entry (assoc okurigana (nth 2 entry)))
+  (when-let* ((entry (assoc headword askk-user-dict--alist))
+              (delp t))
+    (when-let* ((o-entry (and okurigana (assoc okurigana (nth 2 entry)))))
       (unless (setf (cdr o-entry) (delete candidate (cdr o-entry)))
         (setf (nth 2 entry) (delete o-entry (nth 2 entry))))
       (catch 'loop

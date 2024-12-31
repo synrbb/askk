@@ -78,6 +78,14 @@
       (should (equal (nth 2 entry) '(("き" ("飽"))
                                      ("か" ("空") ("開"))))))))
 
+(ert-deftest askk-user-dict-test-delete-unknown-not-error ()
+  (let (askk-user-dict--alist)
+    (askk-user-dict--add-entry "あい" nil '("愛"))
+    (askk-user-dict--add-entry "あk" "き" '("飽"))
+    (askk-user-dict--delete-entry "あ" nil '("亜"))
+    (askk-user-dict--delete-entry "あい" nil '("亜衣"))
+    (askk-user-dict--delete-entry "あk" "く" '("開"))))
+
 (ert-deftest askk-user-dict-test-delete-all ()
   (let (askk-user-dict--alist)
     (askk-user-dict--add-entry "あい" nil '("愛"))
