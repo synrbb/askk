@@ -25,7 +25,10 @@
     (when-let* ((err (plist-get status :error)))
       (signal (car err) (cdr err)))
 
-    (let ((buffer (current-buffer)))
+    (let ((buffer (current-buffer))
+          (dir (file-name-directory filename)))
+      (unless (file-directory-p dir)
+        (make-directory dir t))
       (with-temp-file filename
         (set-buffer-multibyte nil)
         (url-insert buffer)

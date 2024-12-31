@@ -77,6 +77,9 @@
                      (copy-file askk-jisyo-file
                                 (concat askk-jisyo-file ".bak")
                                 t t))))
+      (let ((dir (file-name-directory askk-jisyo-file)))
+        (unless (file-directory-p dir)
+          (make-directory dir t)))
       (with-temp-file askk-jisyo-file
         (insert new)))
     ;; for kill-emacs-query-functions
