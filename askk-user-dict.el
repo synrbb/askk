@@ -61,23 +61,23 @@
 (defun askk-user-dict-load ()
   (or askk-user-dict--alist
       (setq askk-user-dict--alist
-            (and (file-readable-p askk-jisyo-user-file)
-                 (askk-jisyo-load askk-jisyo-user-file)))))
+            (and (file-readable-p askk-jisyo-file)
+                 (askk-jisyo-load askk-jisyo-file)))))
 
 (defun askk-user-dict-save ()
   (let* ((new (askk-jisyo--encode askk-user-dict--alist))
          (new-size (string-bytes new))
          (old-size (or (file-attribute-size
-                        (file-attributes askk-jisyo-user-file))
+                        (file-attributes askk-jisyo-file))
                        0)))
     (when (or (>= new-size old-size)
               (and (yes-or-no-p (concat "Save small "
-                                        askk-jisyo-user-file "?"))
+                                        askk-jisyo-file "?"))
                    (prog1 t
-                     (copy-file askk-jisyo-user-file
-                                (concat askk-jisyo-user-file ".bak")
+                     (copy-file askk-jisyo-file
+                                (concat askk-jisyo-file ".bak")
                                 t t))))
-      (with-temp-file askk-jisyo-user-file
+      (with-temp-file askk-jisyo-file
         (insert new)))
     ;; for kill-emacs-query-functions
     t))

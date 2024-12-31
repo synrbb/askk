@@ -9,7 +9,7 @@
   "Options for askk-jisyo.el."
   :group 'askk)
 
-(defcustom askk-jisyo-user-file (locate-user-emacs-file "askk-jisyo")
+(defcustom askk-jisyo-file (locate-user-emacs-file "askk-jisyo")
   "DDSKK の個人辞書形式のファイル。"
   :type 'file)
 
