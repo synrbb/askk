@@ -16,7 +16,7 @@
         (delete-dups
          (append
           (cdr (assoc okurigana (nth 2 entry)))
-          (nth 1 entry)))
+          (copy-sequence (nth 1 entry))))
       (copy-sequence (nth 1 entry)))))
 
 (defun askk-user-dict--prefix-keys (prefix)
