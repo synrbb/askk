@@ -8,6 +8,25 @@
 (require 'ert)
 (require 'askk-user-dict)
 
+(ert-deftest askk-user-dict-test-lookup ()
+  (let (askk-user-dict--alist)
+    (askk-user-dict--add-entry "あい" nil '("愛"))
+    (askk-user-dict--add-entry "あい" nil '("亜衣"))
+    (should (equal (askk-user-dict-lookup "あい" nil)
+                   '(("亜衣") ("愛"))))))
+
+(ert-deftest askk-user-dict-test-lookup-not-found ()
+  (let (askk-user-dict--alist)
+    (should-not (askk-user-dict-lookup "あい" nil))))
+
+(ert-deftest askk-user-dict-test-lookup-okurigana ()
+  (let (askk-user-dict--alist)
+    (askk-user-dict--add-entry "あk" "か" '("開"))
+    (askk-user-dict--add-entry "あk" "き" '("飽"))
+    (askk-user-dict--add-entry "あk" "か" '("空"))
+    (should (equal (askk-user-dict-lookup "あk" "か")
+                   '(("空") ("開") ("飽"))))))
+
 (ert-deftest askk-user-dict-test-add ()
   (let (askk-user-dict--alist)
     (askk-user-dict--add-entry "あい" nil '("愛"))
