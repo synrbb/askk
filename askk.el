@@ -602,6 +602,8 @@
       (askk-user-dict--delete-entry askk-headword--string
                                     askk-okurigana--string
                                     candidate)
+      (when askk-okurigana--string
+        (delete-region askk-headword--end (point)))
       (askk-headword--replace "")
       (askk-kana--normal)
       (askk--candidates-style-handle :hide))))
