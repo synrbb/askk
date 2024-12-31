@@ -11,13 +11,11 @@
 
 (defcustom askk-jisyo-user-file (locate-user-emacs-file "askk-jisyo")
   "DDSKK の個人辞書形式のファイル。"
-  :type 'file
-  :group 'askk-jisyo)
+  :type 'file)
 
 (defcustom askk-jisyo-lookup-file (locate-user-emacs-file "SKK-JISYO.L")
   "Default file name for `askk-jisyo-lookup'."
-  :type 'file
-  :group 'askk-jisyo)
+  :type 'file)
 
 ;;;###autoload
 (defun askk-jisyo-lookup (headword &optional _ filename)

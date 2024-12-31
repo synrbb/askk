@@ -13,18 +13,15 @@
 
 (defcustom askk-server-host "127.0.0.1"
   "Default host name for `askk-server-lookup'."
-  :type 'string
-  :group 'askk-server)
+  :type 'string)
 
 (defcustom askk-server-port 1178
   "Default port for `askk-server-lookup'."
-  :type 'natnum
-  :group 'askk-server)
+  :type 'natnum)
 
 (defcustom askk-server-coding-system nil
   "Default coding system for `askk-server-lookup'."
-  :type 'coding-system
-  :group 'askk-server)
+  :type 'coding-system)
 
 (defvar askk-server--process nil)
 

@@ -13,8 +13,7 @@
 
 (defcustom askk-cdb-lookup-file (locate-user-emacs-file "SKK-JISYO.L.cdb")
   "Default file name for `askk-cdb-lookup'."
-  :type 'file
-  :group 'askk-cdb)
+  :type 'file)
 
 ;;;###autoload
 (defun askk-cdb-lookup (headword &optional _ filename)
