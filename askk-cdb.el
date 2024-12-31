@@ -11,7 +11,8 @@
   "Options for askk-cdb.el."
   :group 'askk)
 
-(defcustom askk-cdb-lookup-file (locate-user-emacs-file "SKK-JISYO.L.cdb")
+(defcustom askk-cdb-lookup-file (expand-file-name "SKK-JISYO.L.cdb"
+                                                  askk-jisyo-directory)
   "Default file name for `askk-cdb-lookup'."
   :type 'file)
 

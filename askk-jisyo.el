@@ -9,11 +9,19 @@
   "Options for askk-jisyo.el."
   :group 'askk)
 
-(defcustom askk-jisyo-file (locate-user-emacs-file "askk-jisyo")
+(defcustom askk-jisyo-directory user-emacs-directory
+  "SKK 辞書ディレクトリ。"
+  :type 'directory)
+
+(defcustom askk-jisyo-file (expand-file-name (if (eq askk-jisyo-directory
+                                                     user-emacs-directory)
+                                                 "askk-jisyo" "jisyo")
+                                             askk-jisyo-directory)
   "DDSKK の個人辞書形式のファイル。"
   :type 'file)
 
-(defcustom askk-jisyo-lookup-file (locate-user-emacs-file "SKK-JISYO.L")
+(defcustom askk-jisyo-lookup-file (expand-file-name "SKK-JISYO.L"
+                                                    askk-jisyo-directory)
   "Default file name for `askk-jisyo-lookup'."
   :type 'file)
 

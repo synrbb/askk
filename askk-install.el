@@ -6,6 +6,7 @@
 ;;; Code:
 
 (require 'url-handlers)
+(require 'askk-jisyo)
 
 (defvar askk-install--jisyo-url
   "https://raw.githubusercontent.com/skk-dev/dict/master/SKK-JISYO.L")
@@ -37,7 +38,7 @@
   (interactive
    (let* ((url (read-string "URL: " askk-install--jisyo-url))
           (filename (read-file-name "File: "
-                                    user-emacs-directory
+                                    askk-jisyo-directory
                                     nil
                                     nil
                                     (url-file-nondirectory url))))
@@ -127,7 +128,7 @@
   (interactive
    (let* ((url (read-string "SKK-JISYO URL: " askk-install--jisyo-url))
           (filename (read-file-name "CDB File: "
-                                    user-emacs-directory
+                                    askk-jisyo-directory
                                     nil
                                     nil
                                     (concat (url-file-nondirectory url)
