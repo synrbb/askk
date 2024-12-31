@@ -52,9 +52,9 @@
   (let (result)
     (goto-char (point-min))
     (while (not (eobp))
-      (while (= (char-after) ?\;)
-        (forward-line))
-      (push (askk-jisyo--read-line) result))
+      (if (= (char-after) ?\;)
+          (forward-line)
+        (push (askk-jisyo--read-line) result)))
     (nreverse result)))
 
 (defun askk-jisyo--read-line ()
@@ -111,15 +111,13 @@
     (nth 1 (askk-jisyo--read-line))))
 
 (defun askk-jisyo--encode (alist)
-  (let (with without)
+  (let ((with (list ";; okuri-ari entries."))
+        (without (list ";; okuri-nasi entries.")))
     (dolist (entry alist)
-      (push entry (if (nth 2 entry) with without)))
-    (concat ";; okuri-ari entries.\n"
-            (mapconcat #'askk-jisyo--encode-entry (nreverse with) "\n")
-            "\n"
-            ";; okuri-nasi entries.\n"
-            (mapconcat #'askk-jisyo--encode-entry (nreverse without) "\n")
-            "\n")))
+      (push (askk-jisyo--encode-entry entry) (if (nth 2 entry) with without)))
+    (mapconcat #'identity
+               (nconc (nreverse with) (nreverse without) '(""))
+               "\n")))
 
 (defun askk-jisyo--encode-entry (entry)
   (pcase-let ((`(,headword ,candidates ,okurigana-alist) entry))

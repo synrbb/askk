@@ -28,7 +28,10 @@
                      ("あ" (("亜")) nil))))))
 
 (ert-deftest askk-jisyo-test-read-empty ()
-  (with-askk-jisyo-buffer ""
+  (with-askk-jisyo-buffer "\
+;; okuri-ari entries.
+;; okuri-nasi entries.
+"
     (should-not (askk-jisyo--read))))
 
 (ert-deftest askk-jisyo-test-read-line ()
@@ -72,6 +75,13 @@
 あi /合/[い/合/]/
 ;; okuri-nasi entries.
 あ /亜/
+")))
+
+(ert-deftest askk-jisyo-test-encode-empty ()
+  (should (equal (askk-jisyo--encode nil)
+                 "\
+;; okuri-ari entries.
+;; okuri-nasi entries.
 ")))
 
 (ert-deftest askk-jisyo-test-encode-entry ()
