@@ -190,8 +190,13 @@
 
 (ert-deftest askk-test-fullwidth-ascii-electric-pair ()
   (with-askk-test-output-buffer #'askk-fullwidth-ascii-mode
-    (electric-pair-mode)
     (askk-test-trigger-events "([{")
+    (should (equal (buffer-string) "（［｛"))
+    (erase-buffer)
+    (electric-pair-mode)
+    (unwind-protect
+        (askk-test-trigger-events "([{")
+      (electric-pair-mode -1))
     (should (equal (buffer-string) "（［｛｝］）"))))
 
 (ert-deftest askk-test-kana-electric-pair ()
@@ -200,8 +205,10 @@
       (askk-test-trigger-events "(z([{")
       (should (equal (buffer-string) "（（[{"))
       (erase-buffer)
-      (askk-electric-pair-mode)
-      (askk-test-trigger-events "(z([{")
+      (electric-pair-mode)
+      (unwind-protect
+          (askk-test-trigger-events "(z([{")
+        (electric-pair-mode -1))
       (should (equal (buffer-string) "（（[{}]））")))))
 
 (ert-deftest askk-test-handle-normal-sticky ()

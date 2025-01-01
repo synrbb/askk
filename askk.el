@@ -307,6 +307,7 @@
   (interactive "*p")
   (let ((c (aref askk-fullwidth-ascii-table last-command-event)))
     (when c
+      ;; Set last-command-event for electric-pair-mode
       (setq last-command-event c))
     (self-insert-command n c)))
 
@@ -316,7 +317,6 @@
 ;;; Output
 
 (defvar askk--output nil)
-(defvar askk--post-insert-hook nil)
 
 (defun askk--output-commit (obj)
   (when (characterp obj)
@@ -330,12 +330,12 @@
 
 (defun askk--output-flush ()
   (when askk--output
-    (let ((str (car askk--output)))
-      (apply #'insert (nreverse askk--output))
-      (setq askk--output nil)
-      (unless (string-empty-p str)
-        (setq last-command-event (aref str (1- (length str))))
-        (run-hooks 'askk--post-insert-hook)))))
+    (dolist (str (nreverse askk--output))
+      (seq-doseq (c str)
+        ;; Set last-command-event for electric-pair-mode
+        (setq last-command-event c)
+        (self-insert-command 1 c)))
+    (setq askk--output nil)))
 
 ;;; Transliteration
 
@@ -896,32 +896,6 @@ corfu から :display-sort-function が使われるため見出し語は登録�
 (defun askk--restore-keymap (window)
   (when (and askk-mode (eq (selected-window) window))
     (askk--enable-keymap (askk--current-keymap))))
-
-(declare-function electric-pair-post-self-insert-function "elec-pair" ())
-
-;;;###autoload
-(define-minor-mode askk-electric-pair-mode
-  "かなモードで閉じ括弧の自動入力などの `electric-pair-mode' の動作を行う。
-リージョンが有効であればリージョンを括弧で囲むようになる。
-
-`delete-selection-mode' を有効にする場合は、このモードだけではなく
-`electric-pair-mode' も有効にして、`electric-pair-mode' 内の
-
-    (add-hook \\='self-insert-uses-region-functions
-              #\\='electric-pair-will-use-region)
-
-が実行されるようにする必要がある。
-
-このモードを有効にしても全角 ASCII モードには影響しない。
-何もしなくても全角 ASCII モードは `electric-pair-mode' をサポートしている。"
-  :global t
-  (cond
-   (askk-electric-pair-mode
-    (add-hook 'askk--post-insert-hook
-              #'electric-pair-post-self-insert-function))
-   (t
-    (remove-hook 'askk--post-insert-hook
-                 #'electric-pair-post-self-insert-function))))
 
 (defvar askk-cursor--default-color nil)
 
