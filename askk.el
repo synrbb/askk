@@ -465,7 +465,7 @@
 (defvar-local askk-headword--start nil)
 (defvar-local askk-headword--end nil)
 (defvar-local askk-headword--string nil)
-(defvar-local askk-headword--base-string nil)
+(defvar-local askk-headword--input-string nil)
 
 (defun askk-headword--cleanup ()
   (when askk-headword--start
@@ -475,7 +475,7 @@
     (set-marker askk-headword--end nil))
   (setq askk-headword--end nil)
   (setq askk-headword--string nil)
-  (setq askk-headword--base-string nil))
+  (setq askk-headword--input-string nil))
 
 (defun askk-headword--empty-p ()
   (and (null askk--output)
@@ -570,7 +570,7 @@
     (setq askk-cand--index 0)
     (setq askk-cand--candidates result)
     (setq askk--output nil)
-    (setq askk-headword--base-string baseword)
+    (setq askk-headword--input-string baseword)
     (setq askk-headword--string headword)
     (setq askk-okurigana--string okurigana)))
 
@@ -679,7 +679,7 @@
   (askk--enable-keymap askk-kana-mode-map)
   (if askk-headword--start
       (progn
-        (askk-headword--replace askk-headword--base-string
+        (askk-headword--replace askk-headword--input-string
                                 askk-composing-prompt)
         (set-marker askk-headword--end nil)
         (setq askk-headword--end nil)
@@ -692,7 +692,7 @@
   (askk--enable-keymap askk-kana-selecting-mode-map)
   (setq askk-headword--end
         (set-marker (make-marker) (or askk-okurigana--start (point))))
-  (askk-headword--replace askk-headword--base-string
+  (askk-headword--replace askk-headword--input-string
                           askk-selecting-prompt)
   (askk-okurigana--delete-prompt))
 
