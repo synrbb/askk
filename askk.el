@@ -310,6 +310,9 @@
       (setq last-command-event c))
     (self-insert-command n c)))
 
+(put 'askk-fullwidth-ascii-insert
+     'delete-selection 'delete-selection-uses-region-p)
+
 ;;; Output
 
 (defvar askk--output nil)
@@ -776,6 +779,9 @@
   (when (eq askk--conversion-mode 'selecting)
     (askk--handle-candidates)))
 
+(put 'askk-kana--handle-event
+     'delete-selection 'delete-selection-uses-region-p)
+
 (defun askk-kana--commit ()
   (interactive "*")
   (if (eq askk--conversion-mode 'selecting)
@@ -800,6 +806,8 @@
       (exit-minibuffer)
     (askk-kana--commit)
     (call-interactively #'newline)))
+
+(put 'askk-newline 'delete-selection t)
 
 (defun askk-delete-backward-char (n)
   (interactive "p")
@@ -895,6 +903,14 @@ corfu から :display-sort-function が使われるため見出し語は登録�
 (define-minor-mode askk-electric-pair-mode
   "かなモードで閉じ括弧の自動入力などの `electric-pair-mode' の動作を行う。
 リージョンが有効であればリージョンを括弧で囲むようになる。
+
+`delete-selection-mode' を有効にする場合は、このモードだけではなく
+`electric-pair-mode' も有効にして、`electric-pair-mode' 内の
+
+    (add-hook \\='self-insert-uses-region-functions
+              #\\='electric-pair-will-use-region)
+
+が実行されるようにする必要がある。
 
 このモードを有効にしても全角 ASCII モードには影響しない。
 何もしなくても全角 ASCII モードは `electric-pair-mode' をサポートしている。"
