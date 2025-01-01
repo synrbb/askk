@@ -154,6 +154,13 @@
     (should (equal askk--output '("?")))
     (should-not askk-trans--events)))
 
+(ert-deftest askk-test-headword-make ()
+  (let ((askk-headword--input-string "\n あ \n イ \n")
+        askk-okurigana--event)
+    (should (equal (askk-headword--make) "あい"))
+    (setq askk-okurigana--event ?k)
+    (should (equal (askk-headword--make) "あいk"))))
+
 (defmacro with-askk-test-lookup (kv &rest body)
   (declare (indent defun))
   `(let ((askk-lookup-sources

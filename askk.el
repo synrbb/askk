@@ -467,6 +467,10 @@
 (defvar-local askk-headword--string nil)
 (defvar-local askk-headword--input-string nil)
 
+(defvar-local askk-okurigana--start nil)
+(defvar-local askk-okurigana--event nil)
+(defvar-local askk-okurigana--string nil)
+
 (defun askk-headword--cleanup ()
   (when askk-headword--start
     (delete-region askk-headword--start (1+ askk-headword--start))
@@ -481,6 +485,15 @@
   (and (null askk--output)
        (= (point) (1+ askk-headword--start))))
 
+(defun askk-headword--make ()
+  (let (cs)
+    (seq-doseq (c askk-headword--input-string)
+      (unless (memq c '(?\s ?\n))
+        (push (askk--kata2hira c) cs)))
+    (when askk-okurigana--event
+      (push askk-okurigana--event cs))
+    (concat (nreverse cs))))
+
 (defun askk-headword--replace (str &optional prompt)
   (save-excursion
     (goto-char (+ askk-headword--start (if prompt 0 1)))
@@ -490,10 +503,6 @@
 (defun askk-headword--start ()
   (setq askk-headword--start (+ (point) (askk--output-length)))
   (askk--output-commit askk-composing-prompt))
-
-(defvar-local askk-okurigana--start nil)
-(defvar-local askk-okurigana--event nil)
-(defvar-local askk-okurigana--string nil)
 
 (defun askk-okurigana--cleanup ()
   (setq askk-okurigana--start nil)
@@ -547,32 +556,30 @@
   (setq askk-cand--overlay nil))
 
 (defun askk-cand--lookup (&optional okurigana-suffix)
-  (let* ((baseword (apply #'concat
-                          (buffer-substring-no-properties
-                           (1+ askk-headword--start)
-                           (or askk-okurigana--start (point)))
-                          (nreverse askk--output)))
-         (headword (concat (mapcar #'askk--kata2hira baseword)
-                           (and askk-okurigana--event
-                                (char-to-string askk-okurigana--event))))
-         (okurigana (and askk-okurigana--event
-                         (concat (and askk-okurigana--start
-                                      (mapcar #'askk--kata2hira
-                                              (buffer-substring-no-properties
-                                               (1+ askk-okurigana--start)
-                                               (point))))
-                                 (mapcar #'askk--kata2hira okurigana-suffix))))
-         (result (delete-dups
-                  (mapcan (lambda (source)
-                            (apply (car source)
-                                   `(,headword ,okurigana ,@(cdr source))))
-                          askk-lookup-sources))))
-    (setq askk-cand--index 0)
-    (setq askk-cand--candidates result)
-    (setq askk--output nil)
-    (setq askk-headword--input-string baseword)
-    (setq askk-headword--string headword)
-    (setq askk-okurigana--string okurigana)))
+  (setq askk-headword--input-string
+        (apply #'concat
+               (buffer-substring-no-properties (1+ askk-headword--start)
+                                               (or askk-okurigana--start
+                                                   (point)))
+               (nreverse askk--output)))
+  (setq askk-headword--string (askk-headword--make))
+  (setq askk-okurigana--string
+        (and askk-okurigana--event
+             (concat (and askk-okurigana--start
+                          (mapcar #'askk--kata2hira
+                                  (buffer-substring-no-properties
+                                   (1+ askk-okurigana--start)
+                                   (point))))
+                     (mapcar #'askk--kata2hira okurigana-suffix))))
+  (setq askk--output nil)
+  (setq askk-cand--index 0)
+  (setq askk-cand--candidates
+        (delete-dups (mapcan (lambda (source)
+                               (apply (car source)
+                                      `(,askk-headword--string
+                                        ,askk-okurigana--string
+                                        ,@(cdr source))))
+                             askk-lookup-sources))))
 
 (defun askk-next-candidate ()
   (interactive "*")
