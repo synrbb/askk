@@ -893,11 +893,14 @@ corfu から :display-sort-function が使われるため見出し語は登録�
 
 ;;;###autoload
 (define-minor-mode askk-electric-pair-mode
-  "ASKK electric pair mode."
+  "かなモードで閉じ括弧の自動入力などの `electric-pair-mode' の動作を行う。
+リージョンが有効であればリージョンを括弧で囲むようになる。
+
+このモードを有効にしても全角 ASCII モードには影響しない。
+何もしなくても全角 ASCII モードは `electric-pair-mode' をサポートしている。"
   :global t
   (cond
    (askk-electric-pair-mode
-    (electric-pair-mode)
     (add-hook 'askk--post-insert-hook
               #'electric-pair-post-self-insert-function))
    (t
