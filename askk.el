@@ -69,7 +69,19 @@
 対応する ASCII コードポイントでインデックスされる全角 ASCII 文字のベクタ。"
   :type '(vector (character :inline t)))
 
-(defcustom askk-transliteration-alist
+(defcustom askk-transliteration-alist nil
+  "ひらがな／カタカナモードでの transliteration 定義の連想リスト。
+連想リストの値は、変換結果の文字列と自動入力文字の cons セル、または
+そのような cons セルを返す関数。
+
+同じキーに対する定義が `askk-transliteration-base-alist' にあっても
+こちらの定義の方が優先される。"
+  :type '(alist :key-type string
+                :value-type (choice (cons string (choice (const nil)
+                                                         character))
+                                    symbol)))
+
+(defcustom askk-transliteration-base-alist
   '(("xa" "ぁ") ("a" "あ") ("xi" "ぃ") ("i" "い") ("xu" "ぅ")
     ("u" "う") ("xe" "ぇ") ("e" "え") ("xo" "ぉ") ("o" "お")
     ("ka" "か") ("ga" "が") ("ki" "き") ("gi" "ぎ") ("ku" "く")
@@ -169,9 +181,10 @@
     ("/" . askk-abbrev-mode)
     ("l" . askk-ascii-mode)
     ("q" . askk-toggle-kana))
-  "ひらがな／カタカナモードでの transliteration 定義の連想リスト。
-連想リストの値は、変換結果の文字列と自動入力文字の cons セル、または
-そのような cons セルを返す関数。"
+  "ひらがな／カタカナモードでのデフォルトの transliteration 定義の連想リスト。
+
+同じキーに対する定義が `askk-transliteration-alist' にある場合は
+こちらの定義は無視される。"
   :type '(alist :key-type string
                 :value-type (choice (cons string (choice (const nil)
                                                          character))
@@ -345,12 +358,15 @@
 (defvar-local askk-trans--overlay nil)
 
 (defun askk-trans--root ()
-  (or askk-trans--root
-      (setq askk-trans--root
-            (let ((root (askk-trans--node-make)))
-              (dolist (kv askk-transliteration-alist)
-                (askk-trans--node-insert root (car kv) (cdr kv)))
-              root))))
+  (or askk-trans--root (setq askk-trans--root (askk-trans--make))))
+
+(defun askk-trans--make ()
+  (let ((root (askk-trans--node-make)))
+    (dolist (alist (list askk-transliteration-alist
+                         askk-transliteration-base-alist))
+      (dolist (kv alist)
+        (askk-trans--node-insert root (car kv) (cdr kv))))
+    root))
 
 (define-inline askk-trans--node-make (&optional event value children)
   (inline-quote (list ,event ,value ,children)))
@@ -366,7 +382,8 @@
     (setq node (or (assq c (askk-trans--node-children node))
                    (car (push (askk-trans--node-make c)
                               (askk-trans--node-children node))))))
-  (setf (askk-trans--node-value node) value))
+  (unless (askk-trans--node-value node)
+    (setf (askk-trans--node-value node) value)))
 
 (defun askk-trans--node ()
   (or askk-trans--node (setq askk-trans--node (askk-trans--root))))

@@ -25,6 +25,13 @@
                               (?k nil ((?a ("か") nil)))
                               (?a ("あ") nil)))))))
 
+(ert-deftest askk-test-trans-customization ()
+  (let* ((askk-transliteration-alist '(("a" "ああ")
+                                       ("a" "いい")))
+         (tree (askk-trans--make)))
+    (should (equal (assq ?a (askk-trans--node-children tree))
+                   '(?a ("ああ") nil)))))
+
 (ert-deftest askk-test-output-commit ()
   (let (askk--output)
     (should (equal (askk--output-commit "あい") '("あい")))
@@ -35,7 +42,7 @@
 
 (defmacro with-askk-test-transliteration (alist &rest body)
   (declare (indent defun))
-  `(let ((askk-transliteration-alist ,alist)
+  `(let ((askk-transliteration-base-alist ,alist)
          askk--output
          askk-trans--root
          askk-trans--node
