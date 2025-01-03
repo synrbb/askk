@@ -26,10 +26,9 @@
   "検索ソースのリスト。先頭から順にすべてのソースを検索する。"
   :type '(alist :key-type symbol :value-type (repeat sexp)))
 
-(defcustom askk-candidates-style nil
+(defcustom askk-candidates-style-function #'askk-candidates-inplace-style
   "候補の一覧のスタイル。"
-  :type '(choice (const nil)
-                 symbol))
+  :type 'function)
 
 (defcustom askk-auto-conversion-triggers
   (mapcar #'char-to-string "を、。")
@@ -545,21 +544,11 @@
 
 ;;; Candidate
 
-(defvar askk-candidates-style-alist
-  '((posframe
-     :show askk-posframe-show
-     :hide askk-posframe-hide
-     :cleanup askk-posframe-cleanup
-     :page-size askk-posframe-page-size)))
-
-(defun askk--candidates-style-handle (method)
-  (when-let* ((func (plist-get (alist-get askk-candidates-style
-                                          askk-candidates-style-alist)
-                               method)))
-    (funcall func)))
+(defun askk-candidates-inplace-style (method)
+  (and (eq method :page-size) 1))
 
 (defun askk--candidates-page-size ()
-  (or (askk--candidates-style-handle :page-size) 1))
+  (funcall askk-candidates-style-function :page-size))
 
 (defvar-local askk-cand--candidates nil)
 (defvar-local askk-cand--index nil)
@@ -633,7 +622,7 @@
         (delete-region askk-headword--end (point)))
       (askk-headword--replace "")
       (askk-kana--normal)
-      (askk--candidates-style-handle :hide))))
+      (funcall askk-candidates-style-function :hide))))
 
 (defun askk--register-new-candidate ()
   (if-let* ((str (read-string (concat "Register "
@@ -661,13 +650,13 @@
   (cond
    ((= askk-cand--index -1)
     (askk-kana--composing)
-    (askk--candidates-style-handle :hide))
+    (funcall askk-candidates-style-function :hide))
    ((= askk-cand--index (length askk-cand--candidates))
-    (askk--candidates-style-handle :hide)
+    (funcall askk-candidates-style-function :hide)
     (askk--register-new-candidate))
    (t
     (askk--preview-candidate)
-    (askk--candidates-style-handle :show))))
+    (funcall askk-candidates-style-function :show))))
 
 (defun askk--preview-candidate ()
   (let ((candidate (nth askk-cand--index askk-cand--candidates))
@@ -813,7 +802,7 @@
         (askk-user-dict--add-entry askk-headword--string
                                    askk-okurigana--string
                                    candidate)
-        (askk--candidates-style-handle :hide))
+        (funcall askk-candidates-style-function :hide))
     (askk-trans--commit))
   (unless (eq askk--conversion-mode 'normal)
     (askk-kana--normal))
@@ -905,7 +894,7 @@ corfu から :display-sort-function が使われるため見出し語は登録�
     (remove-hook 'post-command-hook #'askk-trans--cleanup-if-moved t)
     (remove-hook 'completion-at-point-functions #'askk-completion-at-point t)
 
-    (askk--candidates-style-handle :cleanup)
+    (funcall askk-candidates-style-function :cleanup)
     (askk-trans--cleanup)
     (askk-headword--cleanup)
     (askk-okurigana--cleanup)

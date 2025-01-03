@@ -21,5 +21,4 @@ jobs:
         with:
           version: ${{ matrix.emacs_version }}
       - uses: actions/checkout@v4
-      - run: emacs --batch -Q --eval "(package-install 'posframe t)"
-      - run: make check EMACS='emacs -f package-activate-all'
+      - run: make check
