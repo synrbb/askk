@@ -127,7 +127,7 @@
           (delete-char 8))))))
 
 ;;;###autoload
-(defun askk-install-cdb-dict (url filename)
+(defun askk-install-cdb-jisyo (url filename)
   (interactive
    (let* ((url (read-string "SKK-JISYO URL: " askk-install--jisyo-url))
           (filename (read-file-name "CDB File: "
