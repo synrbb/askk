@@ -29,6 +29,8 @@
 (defun askk-jisyo-lookup (headword &optional _ filename)
   (unless filename
     (setq filename askk-jisyo-lookup-file))
+  (unless (file-name-absolute-p filename)
+    (setq filename (expand-file-name filename askk-jisyo-directory)))
 
   (with-current-buffer
       (get-buffer-create (concat " *askk-jisyo:" filename "*") t)

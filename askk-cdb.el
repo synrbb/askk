@@ -18,8 +18,13 @@
 
 ;;;###autoload
 (defun askk-cdb-lookup (headword &optional _ filename)
+  (unless filename
+    (setq filename askk-cdb-lookup-file))
+  (unless (file-name-absolute-p filename)
+    (setq filename (expand-file-name filename askk-jisyo-directory)))
+
   (and-let* ((key (encode-coding-string headword 'utf-8))
-             (val (askk-cdb--get (or filename askk-cdb-lookup-file) key)))
+             (val (askk-cdb--get filename key)))
     (askk-jisyo--parse-candidates (decode-coding-string val 'utf-8))))
 
 (defun askk-cdb--get (filename key)
