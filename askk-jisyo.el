@@ -1,6 +1,6 @@
 ;;; askk-jisyo.el --- DDSKK jisyo support for ASKK -*- lexical-binding: t; -*-
 
-;; SPDX-FileCopyrightText: 2024 synrbb
+;; SPDX-FileCopyrightText: 2024-2025 synrbb
 ;; SPDX-License-Identifier: Apache-2.0 OR GPL-3.0-or-later
 
 ;;; Code:
