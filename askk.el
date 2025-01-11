@@ -935,12 +935,16 @@ corfu から :display-sort-function が使われるため見出し語は登録�
   (register-input-method
    "japanese-askk"
    "Japanese"
-   (lambda (_)
-     (setq deactivate-current-input-method-function
-           (lambda () (askk-mode -1)))
-     (askk-mode 1))
+   #'askk-activate
    "__"
    "Japanese input method ASKK."))
+
+(defun askk-activate (_input-method)
+  (setq deactivate-current-input-method-function #'askk-deactivate)
+  (askk-mode))
+
+(defun askk-deactivate ()
+  (askk-mode -1))
 
 (provide 'askk)
 ;;; askk.el ends here
