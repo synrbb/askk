@@ -241,8 +241,8 @@
 
 (ert-deftest askk-test-handle-normal-sticky-trans-defined ()
   (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-trans--node-insert (askk-trans--root) ";" '("；"))
-    (askk-test-trigger-events ";")
+    (with-askk-test-transliteration '((";" "；"))
+      (askk-test-trigger-events ";"))
     (should (equal (buffer-string) "▽"))
     (should (eq askk--conversion-mode 'composing))))
 
