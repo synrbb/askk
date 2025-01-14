@@ -8,7 +8,7 @@
 (require 'ert)
 (require 'askk)
 
-(ert-deftest askk-test-trans-tree ()
+(ert-deftest askk-tests-trans-tree ()
   (let ((tree (askk-trans--node-make)))
     (askk-trans--node-insert tree "a" '("あ"))
     (should (equal (assq ?a (nth 2 tree))
@@ -25,14 +25,14 @@
                               (?k nil ((?a ("か") nil)))
                               (?a ("あ") nil)))))))
 
-(ert-deftest askk-test-trans-customization ()
+(ert-deftest askk-tests-trans-customization ()
   (let* ((askk-transliteration-alist '(("a" "ああ")
                                        ("a" "いい")))
          (tree (askk-trans--make)))
     (should (equal (assq ?a (askk-trans--node-children tree))
                    '(?a ("ああ") nil)))))
 
-(ert-deftest askk-test-output-commit ()
+(ert-deftest askk-tests-output-commit ()
   (let (askk--output)
     (should (equal (askk--output-commit "あい") '("あい")))
     (should (equal (askk--output-commit ?う) '("う" "あい")))
@@ -40,7 +40,7 @@
     (should (equal (askk--output-commit "え") '("エ" "う" "あい")))
     (should (equal (askk--output-commit ?お) '("オ" "エ" "う" "あい")))))
 
-(defmacro with-askk-test-transliteration (alist &rest body)
+(defmacro askk-tests-with-transliteration (alist &rest body)
   (declare (indent defun))
   `(let ((askk-transliteration-base-alist ,alist)
          askk--output
@@ -49,14 +49,14 @@
          askk-trans--events)
      ,@body))
 
-(ert-deftest askk-test-transliterate-a ()
-  (with-askk-test-transliteration '(("a" "あ"))
+(ert-deftest askk-tests-transliterate-a ()
+  (askk-tests-with-transliteration '(("a" "あ"))
     (askk-trans--transliterate ?a)
     (should (equal askk--output '("あ")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-transliterate-ka ()
-  (with-askk-test-transliteration '(("ka" "か"))
+(ert-deftest askk-tests-transliterate-ka ()
+  (askk-tests-with-transliteration '(("ka" "か"))
     (askk-trans--transliterate ?k)
     (should-not askk--output)
     (should (equal askk-trans--events '(?k)))
@@ -65,8 +65,8 @@
     (should (equal askk--output '("か")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-transliterate-kya ()
-  (with-askk-test-transliteration '(("kya" "きゃ"))
+(ert-deftest askk-tests-transliterate-kya ()
+  (askk-tests-with-transliteration '(("kya" "きゃ"))
     (askk-trans--transliterate ?k)
     (askk-trans--transliterate ?y)
     (should-not askk--output)
@@ -76,8 +76,8 @@
     (should (equal askk--output '("きゃ")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-transliterate-undefined ()
-  (with-askk-test-transliteration nil
+(ert-deftest askk-tests-transliterate-undefined ()
+  (askk-tests-with-transliteration nil
     (askk-trans--transliterate ?a)
     (should (equal askk--output '("a")))
     (should-not askk-trans--events)
@@ -86,8 +86,8 @@
     (should (equal askk--output '("a")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-transliterate-nn ()
-  (with-askk-test-transliteration '(("n" "ん") ("nn" "ん"))
+(ert-deftest askk-tests-transliterate-nn ()
+  (askk-tests-with-transliteration '(("n" "ん") ("nn" "ん"))
     (askk-trans--transliterate ?n)
     (should-not askk--output)
     (should (equal askk-trans--events '(?n)))
@@ -96,15 +96,15 @@
     (should (equal askk--output '("ん")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-transliterate-na ()
-  (with-askk-test-transliteration '(("n" "ん") ("nn" "ん") ("na" "な"))
+(ert-deftest askk-tests-transliterate-na ()
+  (askk-tests-with-transliteration '(("n" "ん") ("nn" "ん") ("na" "な"))
     (askk-trans--transliterate ?n)
     (askk-trans--transliterate ?a)
     (should (equal askk--output '("な")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-transliterate-nka ()
-  (with-askk-test-transliteration '(("n" "ん") ("nn" "ん") ("ka" "か"))
+(ert-deftest askk-tests-transliterate-nka ()
+  (askk-tests-with-transliteration '(("n" "ん") ("nn" "ん") ("ka" "か"))
     (askk-trans--transliterate ?n)
     (askk-trans--transliterate ?k)
     (should (equal askk--output '("ん")))
@@ -114,21 +114,21 @@
     (should (equal askk--output '("か" "ん")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-transliterate-n? ()
-  (with-askk-test-transliteration '(("n" "ん") ("nn" "ん"))
+(ert-deftest askk-tests-transliterate-n? ()
+  (askk-tests-with-transliteration '(("n" "ん") ("nn" "ん"))
     (askk-trans--transliterate ?n)
     (askk-trans--transliterate ??)
     (should (equal askk--output '("?" "ん")))
     (should-not askk-trans--events))
 
-  (with-askk-test-transliteration '(("n" "ん") ("nn" "ん") ("?" "？"))
+  (askk-tests-with-transliteration '(("n" "ん") ("nn" "ん") ("?" "？"))
     (askk-trans--transliterate ?n)
     (askk-trans--transliterate ??)
     (should (equal askk--output '("？" "ん")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-transliterate-atta ()
-  (with-askk-test-transliteration '(("a" "あ") ("ta" "た") ("tt" "っ" . ?t))
+(ert-deftest askk-tests-transliterate-atta ()
+  (askk-tests-with-transliteration '(("a" "あ") ("ta" "た") ("tt" "っ" . ?t))
     (askk-trans--transliterate ?a)
     (askk-trans--transliterate ?t)
     (askk-trans--transliterate ?t)
@@ -139,36 +139,36 @@
     (should (equal askk--output '("た" "っ" "あ")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-transliterate-discard-1 ()
-  (with-askk-test-transliteration '(("ka" "か") ("ta" "た"))
+(ert-deftest askk-tests-transliterate-discard-1 ()
+  (askk-tests-with-transliteration '(("ka" "か") ("ta" "た"))
     (askk-trans--transliterate ?k)
     (askk-trans--transliterate ?t)
     (should-not askk--output)
     (should (equal askk-trans--events '(?t)))))
 
-(ert-deftest askk-test-transliterate-discard-2 ()
-  (with-askk-test-transliteration '(("a" "あ") ("xtsu" "っ"))
+(ert-deftest askk-tests-transliterate-discard-2 ()
+  (askk-tests-with-transliteration '(("a" "あ") ("xtsu" "っ"))
     (askk-trans--transliterate ?x)
     (askk-trans--transliterate ?t)
     (askk-trans--transliterate ?a)
     (should (equal askk--output '("あ")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-transliterate-discard-3 ()
-  (with-askk-test-transliteration '(("ka" "か"))
+(ert-deftest askk-tests-transliterate-discard-3 ()
+  (askk-tests-with-transliteration '(("ka" "か"))
     (askk-trans--transliterate ?k)
     (askk-trans--transliterate ??)
     (should (equal askk--output '("?")))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-headword-make ()
+(ert-deftest askk-tests-headword-make ()
   (let ((askk-headword--input-string "\n あ \n イ \n")
         askk-okurigana--event)
     (should (equal (askk-headword--make) "あい"))
     (setq askk-okurigana--event ?k)
     (should (equal (askk-headword--make) "あいk"))))
 
-(defmacro with-askk-test-lookup (kv &rest body)
+(defmacro askk-tests-with-lookup (kv &rest body)
   (declare (indent defun))
   `(let ((askk-lookup-sources
           (list (list (lambda (headword &rest _)
@@ -178,7 +178,7 @@
      (let ((candidate (nth askk-cand--index askk-cand--candidates)))
        (askk-headword--replace (car candidate)))))
 
-(defmacro with-askk-test-output-buffer (init-func &rest body)
+(defmacro askk-tests-with-output-buffer (init-func &rest body)
   (declare (indent defun))
   `(let (askk--output
          askk-trans--root
@@ -190,405 +190,405 @@
        (askk--output-flush)
        ,@body)))
 
-(defun askk-test-trigger-events (events)
+(defun askk-tests-trigger-events (events)
   (seq-doseq (event events)
     (setq last-command-event event)
     (setq this-command (keymap-lookup (askk--current-keymap)
                                       (single-key-description event)))
     (command-execute this-command)))
 
-(ert-deftest askk-test-fullwidth-ascii ()
-  (with-askk-test-output-buffer #'askk-fullwidth-ascii-mode
-    (askk-test-trigger-events "a1;!.(")
+(ert-deftest askk-tests-fullwidth-ascii ()
+  (askk-tests-with-output-buffer #'askk-fullwidth-ascii-mode
+    (askk-tests-trigger-events "a1;!.(")
     (should (equal (buffer-string) "ａ１；！．（"))))
 
-(ert-deftest askk-test-fullwidth-ascii-electric-pair ()
-  (with-askk-test-output-buffer #'askk-fullwidth-ascii-mode
-    (askk-test-trigger-events "([{")
+(ert-deftest askk-tests-fullwidth-ascii-electric-pair ()
+  (askk-tests-with-output-buffer #'askk-fullwidth-ascii-mode
+    (askk-tests-trigger-events "([{")
     (should (equal (buffer-string) "（［｛"))
     (erase-buffer)
     (electric-pair-mode)
     (unwind-protect
-        (askk-test-trigger-events "([{")
+        (askk-tests-trigger-events "([{")
       (electric-pair-mode -1))
     (should (equal (buffer-string) "（［｛｝］）"))))
 
-(ert-deftest askk-test-kana-electric-pair ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (with-askk-test-transliteration '(("(" "（") ("z(" "（"))
-      (askk-test-trigger-events "(z([{")
+(ert-deftest askk-tests-kana-electric-pair ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-with-transliteration '(("(" "（") ("z(" "（"))
+      (askk-tests-trigger-events "(z([{")
       (should (equal (buffer-string) "（（[{"))
       (erase-buffer)
       (electric-pair-mode)
       (unwind-protect
-          (askk-test-trigger-events "(z([{")
+          (askk-tests-trigger-events "(z([{")
         (electric-pair-mode -1))
       (should (equal (buffer-string) "（（[{}]））")))))
 
-(ert-deftest askk-test-handle-normal-sticky ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events ";")
+(ert-deftest askk-tests-handle-normal-sticky ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events ";")
     (should (equal (buffer-string) "▽"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'composing))))
 
-(ert-deftest askk-test-handle-normal-sticky-unused ()
-  (with-askk-test-output-buffer #'askk-kana--normal
+(ert-deftest askk-tests-handle-normal-sticky-unused ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
     (let (askk-sticky-shift)
-      (askk-test-trigger-events ";"))
+      (askk-tests-trigger-events ";"))
     (should (equal (buffer-string) ";"))
     (should (eq askk--conversion-mode 'normal))))
 
-(ert-deftest askk-test-handle-normal-sticky-trans-defined ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (with-askk-test-transliteration '((";" "；"))
-      (askk-test-trigger-events ";"))
+(ert-deftest askk-tests-handle-normal-sticky-trans-defined ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-with-transliteration '((";" "；"))
+      (askk-tests-trigger-events ";"))
     (should (equal (buffer-string) "▽"))
     (should (eq askk--conversion-mode 'composing))))
 
-(ert-deftest askk-test-handle-normal-nL ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events "nL")
+(ert-deftest askk-tests-handle-normal-nL ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events "nL")
     (should (equal (buffer-string) "ん"))
     (should-not askk-trans--events)
     (should (eq askk--input-mode 'fullwidth-ascii))))
 
-(ert-deftest askk-test-handle-normal-n-sticky ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events "n;")
+(ert-deftest askk-tests-handle-normal-n-sticky ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events "n;")
     (should (equal (buffer-string) "ん▽"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'composing))))
 
-(ert-deftest askk-test-handle-normal-nQ ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events "nQ")
+(ert-deftest askk-tests-handle-normal-nQ ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events "nQ")
     (should (equal (buffer-string) "ん▽"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'composing))))
 
-(ert-deftest askk-test-handle-normal-nA ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events "nA")
+(ert-deftest askk-tests-handle-normal-nA ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events "nA")
     (should (equal (buffer-string) "ん▽あ"))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-handle-normal-nK ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events "nK")
+(ert-deftest askk-tests-handle-normal-nK ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events "nK")
     (should (equal (buffer-string) "ん▽"))
     (should (equal askk-trans--events '(?k)))))
 
-(ert-deftest askk-test-handle-normal-n/ ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events "n/")
+(ert-deftest askk-tests-handle-normal-n/ ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events "n/")
     (should (equal (buffer-string) "ん▽"))
     (should-not askk-trans--events)
     (should (eq askk--abbrev-flag t))
     (should (eq askk--conversion-mode 'composing))))
 
-(ert-deftest askk-test-handle-normal-nl ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events "nl")
+(ert-deftest askk-tests-handle-normal-nl ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events "nl")
     (should (equal (buffer-string) "ん"))
     (should-not askk-trans--events)
     (should (eq askk--input-mode 'ascii))))
 
-(ert-deftest askk-test-handle-normal-nq ()
-  (with-askk-test-output-buffer #'askk-kana--normal
+(ert-deftest askk-tests-handle-normal-nq ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
     (askk-hiragana-mode)
 
-    (askk-test-trigger-events "nq")
+    (askk-tests-trigger-events "nq")
     (should (equal (buffer-string) "ん"))
     (should-not askk-trans--events)
     (should (eq askk--input-mode 'katakana))
 
-    (askk-test-trigger-events "q")
+    (askk-tests-trigger-events "q")
     (should (eq askk--input-mode 'hiragana))))
 
-(ert-deftest askk-test-handle-normal-zl ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events "z")
+(ert-deftest askk-tests-handle-normal-zl ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events "z")
     (should (equal (buffer-string) ""))
 
-    (askk-test-trigger-events "l")
+    (askk-tests-trigger-events "l")
     (should (equal (buffer-string) "→"))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-handle-normal-zL ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (with-askk-test-transliteration '(("zL" "⇒"))
-      (askk-test-trigger-events "zL"))
+(ert-deftest askk-tests-handle-normal-zL ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-with-transliteration '(("zL" "⇒"))
+      (askk-tests-trigger-events "zL"))
     (should (equal (buffer-string) "⇒"))))
 
-(ert-deftest askk-test-handle-normal-xtl ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events "xtl")
+(ert-deftest askk-tests-handle-normal-xtl ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events "xtl")
     (should (equal (buffer-string) ""))
     (should-not askk-trans--events)
     (should (eq askk--input-mode 'ascii))))
 
-(ert-deftest askk-test-handle-normal-k-undefined ()
-  (with-askk-test-output-buffer #'askk-kana--normal
-    (askk-test-trigger-events "k'")
+(ert-deftest askk-tests-handle-normal-k-undefined ()
+  (askk-tests-with-output-buffer #'askk-kana--normal
+    (askk-tests-trigger-events "k'")
     (should (equal (buffer-string) "'"))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-handle-composing-space-empty ()
-  (with-askk-test-output-buffer #'askk-kana--composing
+(ert-deftest askk-tests-handle-composing-space-empty ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
     (should (equal (buffer-string) "▽"))
-    (askk-test-trigger-events " ")
+    (askk-tests-trigger-events " ")
     (should (equal (buffer-string) ""))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'normal))))
 
-(ert-deftest askk-test-handle-composing-space-n ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-lookup '("ん" . ("ン"))
-      (askk-test-trigger-events "n "))
+(ert-deftest askk-tests-handle-composing-space-n ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-lookup '("ん" . ("ン"))
+      (askk-tests-trigger-events "n "))
     (should (equal (buffer-string) "▼ン"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'selecting))))
 
-(ert-deftest askk-test-handle-composing-space-kan ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-lookup '("かん" . ("缶"))
-      (askk-test-trigger-events "kan "))
+(ert-deftest askk-tests-handle-composing-space-kan ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-lookup '("かん" . ("缶"))
+      (askk-tests-trigger-events "kan "))
     (should (equal (buffer-string) "▼缶"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'selecting))))
 
-(ert-deftest askk-test-handle-composing-abbrev ()
-  (with-askk-test-output-buffer #'askk-kana--composing
+(ert-deftest askk-tests-handle-composing-abbrev ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
     (setq askk--abbrev-flag t)
-    (askk-test-trigger-events "asdfg/")
+    (askk-tests-trigger-events "asdfg/")
     (should (equal (buffer-string) "▽asdfg/"))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-handle-composing-sticky-empty ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events ";")
+(ert-deftest askk-tests-handle-composing-sticky-empty ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events ";")
     (should (equal (buffer-string) ";"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'normal))))
 
-(ert-deftest askk-test-handle-composing-sticky-empty-transliterated ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-transliteration '((";" "；"))
-      (askk-test-trigger-events ";"))
+(ert-deftest askk-tests-handle-composing-sticky-empty-transliterated ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-transliteration '((";" "；"))
+      (askk-tests-trigger-events ";"))
     (should (equal (buffer-string) "；"))))
 
-(ert-deftest askk-test-handle-composing-sticky-n ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "n;")
+(ert-deftest askk-tests-handle-composing-sticky-n ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "n;")
     (should (equal (buffer-string) "▽ん*"))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-handle-composing-upper-headword ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "Ka")
+(ert-deftest askk-tests-handle-composing-upper-headword ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "Ka")
     (should (equal (buffer-string) "▽か"))))
 
-(ert-deftest askk-test-handle-composing-upper-headword-transliterated ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-transliteration '(("zL" "⇒"))
-      (askk-test-trigger-events "zL"))
+(ert-deftest askk-tests-handle-composing-upper-headword-transliterated ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-transliteration '(("zL" "⇒"))
+      (askk-tests-trigger-events "zL"))
     (should (equal (buffer-string) "▽⇒"))))
 
-(ert-deftest askk-test-handle-composing-upper-okurigana ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-lookup '("あt" . ("会"))
-      (askk-test-trigger-events "a;TTA"))
+(ert-deftest askk-tests-handle-composing-upper-okurigana ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-lookup '("あt" . ("会"))
+      (askk-tests-trigger-events "a;TTA"))
     (should (equal (buffer-string) "▼会った"))))
 
-(ert-deftest askk-test-handle-composing-okurigana-event-delayed ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "a;t")
+(ert-deftest askk-tests-handle-composing-okurigana-event-delayed ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "a;t")
     (should (eq askk-okurigana--event ?t))))
 
-(ert-deftest askk-test-handle-composing-nL ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "nL")
+(ert-deftest askk-tests-handle-composing-nL ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "nL")
     (should (equal (buffer-string) "ん"))
     (should-not askk-trans--events)
     (should (eq askk--input-mode 'fullwidth-ascii))))
 
-(ert-deftest askk-test-handle-composing-nQ ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "nQ")
+(ert-deftest askk-tests-handle-composing-nQ ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "nQ")
     (should (equal (buffer-string) "ん▽"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'composing))))
 
-(ert-deftest askk-test-handle-composing-nA ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "nA")
+(ert-deftest askk-tests-handle-composing-nA ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "nA")
     (should (equal (buffer-string) "▽な"))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-handle-composing-aKi ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "aK")
+(ert-deftest askk-tests-handle-composing-aKi ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "aK")
     (should (equal (buffer-string) "▽あ*"))
     (should (equal askk-trans--events '(?k)))
 
-    (with-askk-test-lookup '("あk" . ("開"))
-      (askk-test-trigger-events "i"))
+    (askk-tests-with-lookup '("あk" . ("開"))
+      (askk-tests-trigger-events "i"))
     (should (equal (buffer-string) "▼開き"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'selecting))))
 
-(ert-deftest askk-test-handle-composing-aKI ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-lookup '("あk" . ("開"))
-      (askk-test-trigger-events "aKI"))
+(ert-deftest askk-tests-handle-composing-aKI ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-lookup '("あk" . ("開"))
+      (askk-tests-trigger-events "aKI"))
     (should (equal (buffer-string) "▼開き"))))
 
-(ert-deftest askk-test-handle-composing-aI ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-lookup '("あi" . ("合"))
-      (askk-test-trigger-events "aI"))
+(ert-deftest askk-tests-handle-composing-aI ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-lookup '("あi" . ("合"))
+      (askk-tests-trigger-events "aI"))
     (should (equal (buffer-string) "▼合い"))
     (should (eq askk--conversion-mode 'selecting))))
 
-(ert-deftest askk-test-handle-composing-auto ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "ai")
+(ert-deftest askk-tests-handle-composing-auto ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "ai")
     (should (equal (buffer-string) "▽あい"))
 
-    (with-askk-test-lookup '("あい" . ("愛"))
-      (askk-test-trigger-events "wo"))
+    (askk-tests-with-lookup '("あい" . ("愛"))
+      (askk-tests-trigger-events "wo"))
     (should (equal (buffer-string) "▼愛を"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'selecting))))
 
-(ert-deftest askk-test-handle-composing-auto-empty ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "wo")
+(ert-deftest askk-tests-handle-composing-auto-empty ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "wo")
     (should (equal (buffer-string) "▽を"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'composing))))
 
-(ert-deftest askk-test-handle-composing-suffix-empty ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events ">")
+(ert-deftest askk-tests-handle-composing-suffix-empty ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events ">")
     (should (equal (buffer-string) "▽>"))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-handle-composing-prefix ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-lookup '("し>" . ("私"))
-      (askk-test-trigger-events "si>"))
+(ert-deftest askk-tests-handle-composing-prefix ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-lookup '("し>" . ("私"))
+      (askk-tests-trigger-events "si>"))
     (should (equal (buffer-string) "▼私"))
     (should-not askk-trans--events)
     (should (eq askk--conversion-mode 'selecting))))
 
-(ert-deftest askk-test-handle-composing-nl ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "nl")
+(ert-deftest askk-tests-handle-composing-nl ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "nl")
     (should (equal (buffer-string) "ん"))
     (should-not askk-trans--events)
     (should (eq askk--input-mode 'ascii))))
 
-(ert-deftest askk-test-handle-composing-undefined ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "'")
+(ert-deftest askk-tests-handle-composing-undefined ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "'")
     (should (equal (buffer-string) "▽'"))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-handle-composing-okurigana-nn ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-lookup '("ふくn" . ("含"))
-      (askk-test-trigger-events "fukuNn"))
+(ert-deftest askk-tests-handle-composing-okurigana-nn ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-lookup '("ふくn" . ("含"))
+      (askk-tests-trigger-events "fukuNn"))
     (should (equal (buffer-string) "▼含ん"))))
 
-(ert-deftest askk-test-handle-composing-okurigana-nn-sticky ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-lookup '("ふくn" . ("含"))
-      (askk-test-trigger-events "fuku;nn"))
+(ert-deftest askk-tests-handle-composing-okurigana-nn-sticky ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-lookup '("ふくn" . ("含"))
+      (askk-tests-trigger-events "fuku;nn"))
     (should (equal (buffer-string) "▼含ん"))))
 
-(ert-deftest askk-test-handle-composing-okurigana-sokuon ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-lookup '("いっs" . ("逸"))
-      (askk-test-trigger-events "isSi"))
+(ert-deftest askk-tests-handle-composing-okurigana-sokuon ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-lookup '("いっs" . ("逸"))
+      (askk-tests-trigger-events "isSi"))
     (should (equal (buffer-string) "▼逸し"))))
 
-(ert-deftest askk-test-handle-composing-okurigana-sokuon-sticky ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (with-askk-test-lookup '("いっs" . ("逸"))
-      (askk-test-trigger-events "is;si"))
+(ert-deftest askk-tests-handle-composing-okurigana-sokuon-sticky ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-with-lookup '("いっs" . ("逸"))
+      (askk-tests-trigger-events "is;si"))
     (should (equal (buffer-string) "▼逸し"))))
 
-(ert-deftest askk-test-delete-backward-char-empty ()
-  (with-askk-test-output-buffer #'askk-kana--composing
+(ert-deftest askk-tests-delete-backward-char-empty ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
     (call-interactively #'askk-delete-backward-char)
     (should (equal (buffer-string) ""))
     (should (eq askk--conversion-mode 'normal))))
 
-(ert-deftest askk-test-delete-backward-char-empty-event ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "k")
+(ert-deftest askk-tests-delete-backward-char-empty-event ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "k")
     (askk-delete-backward-char 1)
     (should (equal (buffer-string) "▽"))
     (should-not askk-trans--events)))
 
-(ert-deftest askk-test-delete-backward-char-empty-events ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "ky")
+(ert-deftest askk-tests-delete-backward-char-empty-events ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "ky")
     (askk-delete-backward-char 1)
     (should (equal (buffer-string) "▽"))
     (should (equal askk-trans--events '(?k)))))
 
-(ert-deftest askk-test-delete-backward-char-str ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "a")
+(ert-deftest askk-tests-delete-backward-char-str ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "a")
     (askk-delete-backward-char 1)
     (should (equal (buffer-string) "▽"))))
 
-(ert-deftest askk-test-delete-backward-char-str-prompt ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "a")
+(ert-deftest askk-tests-delete-backward-char-str-prompt ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "a")
     (askk-delete-backward-char 2)
     (should (equal (buffer-string) ""))
     (should (eq askk--conversion-mode 'normal))))
 
-(ert-deftest askk-test-delete-backward-char-str-event-prompt ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "aiky")
+(ert-deftest askk-tests-delete-backward-char-str-event-prompt ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "aiky")
     (askk-delete-backward-char 3)
     (should (equal (buffer-string) "▽あ"))))
 
-(ert-deftest askk-test-delete-backward-char-okurigana-event ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "aK")
+(ert-deftest askk-tests-delete-backward-char-okurigana-event ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "aK")
     (askk-delete-backward-char 1)
     (should (equal (buffer-string) "▽あ*"))
     (should-not askk-trans--events)
     (should-not askk-okurigana--event)
     (should (= (char-after askk-okurigana--start) ?*))))
 
-(ert-deftest askk-test-delete-backward-char-okurigana-prompt ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "aK")
+(ert-deftest askk-tests-delete-backward-char-okurigana-prompt ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "aK")
     (askk-delete-backward-char 2)
     (should (equal (buffer-string) "▽あ"))
     (should-not askk-trans--events)
     (should-not askk-okurigana--event)
     (should-not askk-okurigana--start)))
 
-(ert-deftest askk-test-delete-backward-char-okurigana-tt ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "aTt")
+(ert-deftest askk-tests-delete-backward-char-okurigana-tt ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "aTt")
     (askk-delete-backward-char 1)
     (should (equal (buffer-string) "▽あ*っ"))
     (should-not askk-trans--events)
     (should (= askk-okurigana--event ?t))
     (should (= (char-after askk-okurigana--start) ?*))))
 
-(ert-deftest askk-test-delete-backward-char-okurigana-all ()
-  (with-askk-test-output-buffer #'askk-kana--composing
-    (askk-test-trigger-events "aiTt")
+(ert-deftest askk-tests-delete-backward-char-okurigana-all ()
+  (askk-tests-with-output-buffer #'askk-kana--composing
+    (askk-tests-trigger-events "aiTt")
     (askk-delete-backward-char 6)
     (should (equal (buffer-string) ""))
     (should-not askk-trans--events)
