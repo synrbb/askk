@@ -1,4 +1,4 @@
-;;; askk.el --- ASKK -*- lexical-binding: t; -*-
+;;; askk.el --- UTF-8 based SKK input method -*- lexical-binding: t; -*-
 
 ;; SPDX-FileCopyrightText: 2024-2025 askk contributors
 ;; SPDX-License-Identifier: Apache-2.0 OR GPL-3.0-or-later
@@ -18,7 +18,7 @@
 (require 'askk-user-dict)
 
 (defgroup askk nil
-  "Options for ASKK."
+  "Options for askk."
   :group 'leim)
 
 (defcustom askk-lookup-sources
@@ -190,7 +190,7 @@
                                     symbol)))
 
 (defgroup askk-faces nil
-  "Faces for ASKK"
+  "Faces for askk."
   :group 'askk
   :group 'faces)
 
@@ -910,7 +910,7 @@ corfu から :display-sort-function が使われるため見出し語は登録�
 ;;; Minor modes
 
 (define-minor-mode askk-mode
-  "ASKK input method."
+  "Toggle askk mode."
   :lighter nil
   (cond
    (askk-mode
@@ -947,7 +947,7 @@ corfu から :display-sort-function が使われるため見出し語は登録�
 
 ;;;###autoload
 (define-minor-mode askk-cursor-color-mode
-  "ASKK cursor color mode."
+  "Toggle askk cursor color mode."
   :global t
   (cond
    (askk-cursor-color-mode
@@ -972,7 +972,7 @@ corfu から :display-sort-function が使われるため見出し語は登録�
    "Japanese"
    #'askk-activate
    "__"
-   "Japanese input method ASKK."))
+   "Japanese UTF-8 based SKK input method."))
 
 (defun askk-activate (_input-method)
   (setq deactivate-current-input-method-function #'askk-deactivate)

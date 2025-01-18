@@ -1,4 +1,4 @@
-;;; askk-server.el --- SKK server support for ASKK -*- lexical-binding: t; -*-
+;;; askk-server.el --- SKK server support for askk -*- lexical-binding: t; -*-
 
 ;; SPDX-FileCopyrightText: 2024-2025 askk contributors
 ;; SPDX-License-Identifier: Apache-2.0 OR GPL-3.0-or-later
