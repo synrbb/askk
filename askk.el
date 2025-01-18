@@ -176,7 +176,7 @@
     ("zk" "↑")
     ("zl" "→")
     ("L" . askk-fullwidth-ascii-mode)
-    ("Q" . ignore)
+    ("Q" . askk-start-composing)
     ("/" . askk-abbrev-mode)
     ("l" . askk-ascii-mode)
     ("q" . askk-toggle-kana))
@@ -194,10 +194,6 @@
   :group 'askk
   :group 'faces)
 
-(defface askk-preedit
-  '((t :inherit underline))
-  "Face for preedit.")
-
 (defface askk-candidate-preview
   '((t :inherit highlight))
   "Face for candidate preview.")
@@ -208,26 +204,57 @@
   :doc "Keymap for ASCII mode."
   "C-j" #'askk-hiragana-mode)
 
-(defvar-keymap askk-fullwidth-ascii-mode-map
-  :doc "Keymap for fullwidth ASCII mode."
-  "C-j" #'askk-hiragana-mode
-  "C-q" #'askk-katakana-mode)
+(defvar askk-fullwidth-ascii-mode-map
+  (eval-when-compile
+    (let ((map (define-keymap
+                 :full t
+                 "C-j" #'askk-hiragana-mode
+                 "C-q" #'askk-katakana-mode))
+          (c ?\s))
+      (while (<= c ?~)
+        (keymap-set map (single-key-description c)
+                    #'askk-fullwidth-ascii-insert)
+        (setq c (1+ c)))
+      map))
+  "Keymap for fullwidth ASCII mode.")
 
-(defvar-keymap askk-kana-mode-map
-  :doc "Keymap for normal or composing conversion mode."
-  "C-j" #'askk-kana--commit
-  "DEL" #'askk-delete-backward-char)
+(defvar askk-kana-mode-map
+  (eval-when-compile
+    (let ((map (define-keymap
+                 :full t
+                 "C-j" #'askk-kana--commit
+                 "DEL" #'askk-delete-backward-char
+                 "RET" #'askk-newline))
+          (c ?\s))
+      (while (<= c ?~)
+        (keymap-set map (single-key-description c) #'askk-kana--handle-event)
+        (setq c (1+ c)))
+      map))
+  "Keymap for normal or composing conversion mode.")
 
-(defvar-keymap askk-kana-selecting-mode-map
-  :doc "Keymap for selecting conversion mode."
-  :parent askk-kana-mode-map
-  "C-n" #'askk-next-candidate
-  "C-p" #'askk-previous-candidate
-  "C-v" #'askk-candidates-next-page
-  "M-v" #'askk-candidates-previous-page
-  "SPC" #'askk-next-candidate
-  "X" #'askk-delete-candidate
-  "x" #'askk-previous-candidate)
+(defvar askk-kana-selecting-mode-map
+  (eval-when-compile
+    (let ((map (define-keymap
+                 :full t
+                 "C-j" #'askk-kana--commit
+                 "C-n" #'askk-next-candidate
+                 "C-p" #'askk-previous-candidate
+                 "C-v" #'askk-candidates-next-page
+                 "M-v" #'askk-candidates-previous-page
+                 "DEL" #'askk-delete-backward-char
+                 "RET" #'askk-newline
+                 "SPC" #'askk-next-candidate
+                 "X" #'askk-delete-candidate
+                 "x" #'askk-previous-candidate))
+          (c ?\s)
+          key)
+      (while (<= c ?~)
+        (setq key (single-key-description c))
+        (unless (keymap-lookup map key)
+          (keymap-set map key #'askk-commit-and-handle-event))
+        (setq c (1+ c)))
+      map))
+  "Keymap for selecting conversion mode.")
 
 (defvar askk--input-mode-alist
   '((hiragana
@@ -252,8 +279,6 @@
      :color "#268bd2"
      :keymap askk-kana-mode-map)))
 
-(defvar askk--input-mode-hook nil)
-
 (defvar-local askk--input-mode nil)
 (defvar-local askk--conversion-mode nil)
 (defvar-local askk--abbrev-flag nil)
@@ -272,7 +297,6 @@
          (title (plist-get plist :title)))
     (askk--enable-keymap keymap)
     (setq current-input-method-title title))
-  (run-hooks 'askk--input-mode-hook)
   (force-mode-line-update))
 
 (defun askk--enable-keymap (keymap)
@@ -291,78 +315,39 @@
   (interactive)
   (askk--update-input-mode 'katakana))
 
+(defun askk-fullwidth-ascii-insert (n)
+  (interactive "*p")
+  (let ((c (aref askk-fullwidth-ascii-table last-command-event)))
+    (when c
+      ;; Set last-command-event for electric-pair-mode
+      (setq last-command-event c))
+    (self-insert-command n c)))
+
+(put 'askk-fullwidth-ascii-insert
+     'delete-selection 'delete-selection-uses-region-p)
+
 ;;; Output
 
-(defvar-local askk-kana--default-string nil)
-(defvar-local askk-kana--additional-string nil)
-(defvar-local askk-kana--additional-flag nil)
-(defvar-local askk-kana--last-substring nil)
+(defvar askk--output nil)
 
 (defun askk--output-commit (obj)
   (when (characterp obj)
     (setq obj (char-to-string obj)))
   (when-let* ((func (plist-get (askk--input-mode-plist) :convert-function)))
     (setq obj (concat (mapcar func obj))))
-  (setq askk-kana--last-substring obj)
-  (if askk-kana--additional-flag
-      (setq askk-kana--additional-string
-            (concat askk-kana--additional-string obj))
-    (setq askk-kana--default-string
-          (concat askk-kana--default-string obj))))
+  (push obj askk--output))
 
-;;; Preedit
+(defun askk--output-length ()
+  (apply #'+ (mapcar #'length askk--output)))
 
-(defvar-local askk-preedit--overlay nil)
-
-(defun askk-preedit--setup ()
-  (let ((pos (point)))
-    (if (overlayp askk-preedit--overlay)
-        (move-overlay askk-preedit--overlay pos pos)
-      (setq askk-preedit--overlay (make-overlay pos pos))
-      (overlay-put askk-preedit--overlay 'face 'askk-preedit))))
-
-(defun askk-preedit--teardown ()
-  (when-let* ((start (and (overlayp askk-preedit--overlay)
-                          (overlay-start askk-preedit--overlay))))
-    (delete-region start (overlay-end askk-preedit--overlay))
-    (delete-overlay askk-preedit--overlay))
-  (setq askk-kana--default-string nil)
-  (setq askk-kana--additional-string nil)
-  (setq askk-kana--additional-flag nil)
-  (setq askk-kana--last-substring nil))
-
-(defun askk-preedit--cleanup ()
-  (askk-preedit--teardown)
-  (setq askk-preedit--overlay nil))
-
-(defun askk-preedit--update ()
-  (let ((modified (buffer-modified-p))
-        (start (overlay-start askk-preedit--overlay))
-        (end (overlay-end askk-preedit--overlay)))
-    (when (< start end)
-      (delete-region start end))
-    (goto-char start)
-    (insert (concat (cond
-                     ((eq askk--conversion-mode 'composing)
-                      (char-to-string askk-composing-prompt))
-                     ((eq askk--conversion-mode 'selecting)
-                      (char-to-string askk-selecting-prompt)))
-                    askk-kana--default-string
-                    (and askk-kana--additional-flag
-                         (eq askk--conversion-mode 'composing)
-                         (askk-okurigana--prompt-string))
-                    askk-kana--additional-string))
-    (when (and (eq askk--conversion-mode 'selecting) (askk-cand--current))
-      (askk-cand--make-overlay))
-    (askk-trans--show-or-cleanup-events)
-    (setf (overlay-end askk-preedit--overlay) (point))
-    (when (memq modified '(nil autosaved))
-      (restore-buffer-modified-p modified))))
-
-(defun askk-preedit--to-list ()
-  (and askk-kana--default-string
-       (string-to-list (concat askk-kana--default-string
-                               askk-kana--additional-string))))
+(defun askk--output-flush ()
+  (when askk--output
+    (dolist (str (nreverse askk--output))
+      (seq-doseq (c str)
+        ;; Set last-command-event for electric-pair-mode
+        (setq last-command-event c)
+        (self-insert-command 1 c)))
+    (setq askk--output nil)))
 
 ;;; Transliteration
 
@@ -406,9 +391,7 @@
   (assq event (askk-trans--node-children (or node (askk-trans--node)))))
 
 (defun askk-trans--string ()
-  (propertize (concat (reverse askk-trans--events)
-                      (and (not askk-kana--additional-flag)
-                           (askk-okurigana--prompt-string)))
+  (propertize (apply #'string (reverse askk-trans--events))
               'face `(:foreground ,(askk--input-mode-color))))
 
 (defun askk-trans--show-or-cleanup-events ()
@@ -428,6 +411,12 @@
   (setq askk-trans--node nil)
   (setq askk-trans--events nil)
   (setq askk-trans--overlay nil))
+
+(defun askk-trans--cleanup-if-moved ()
+  (when-let* (((overlayp askk-trans--overlay))
+              (pos (overlay-start askk-trans--overlay))
+              ((/= pos (point))))
+    (askk-trans--cleanup)))
 
 (defun askk-trans--commit (&optional value)
   (or value (setq value (askk-trans--node-value askk-trans--node)))
@@ -490,20 +479,26 @@
 ;;; Headword and Okurigana
 
 (defvar-local askk-headword--start nil)
+(defvar-local askk-headword--end nil)
 (defvar-local askk-headword--string nil)
 (defvar-local askk-headword--input-string nil)
 
-(defvar-local askk-okurigana--prompt-flag nil)
+(defvar-local askk-okurigana--start nil)
 (defvar-local askk-okurigana--event nil)
 (defvar-local askk-okurigana--string nil)
 
 (defun askk-headword--cleanup ()
-  (setq askk-headword--start nil)
+  (when askk-headword--start
+    (delete-region askk-headword--start (1+ askk-headword--start))
+    (setq askk-headword--start nil))
+  (when (markerp askk-headword--end)
+    (set-marker askk-headword--end nil))
+  (setq askk-headword--end nil)
   (setq askk-headword--string nil)
   (setq askk-headword--input-string nil))
 
 (defun askk-headword--empty-p ()
-  (and (null askk-kana--default-string)
+  (and (null askk--output)
        (= (point) (1+ askk-headword--start))))
 
 (defun askk-headword--make ()
@@ -515,22 +510,37 @@
       (push askk-okurigana--event cs))
     (concat (nreverse cs))))
 
+(defun askk-headword--replace (str &optional prompt)
+  (save-excursion
+    (goto-char (+ askk-headword--start (if prompt 0 1)))
+    (insert (or prompt "") str)
+    (delete-char (- askk-headword--end (point)))))
+
+(defun askk-headword--start ()
+  (setq askk-headword--start (+ (point) (askk--output-length)))
+  (askk--output-commit askk-composing-prompt))
+
 (defun askk-okurigana--cleanup ()
-  (setq askk-kana--additional-flag nil)
-  (setq askk-okurigana--prompt-flag nil)
+  (setq askk-okurigana--start nil)
   (setq askk-okurigana--event nil)
   (setq askk-okurigana--string nil))
+
+(defun askk-okurigana--delete-prompt ()
+  (when (and askk-okurigana--start
+             (eq (char-after askk-okurigana--start) askk-okurigana-prompt))
+    (delete-region askk-okurigana--start (1+ askk-okurigana--start))
+    (setq askk-okurigana--start nil)))
 
 (defun askk-okurigana--start (&optional event)
   (when event
     (setq askk-okurigana--event event))
   (unless (memq event '(?a ?i ?u ?e ?o))
-    (setq askk-okurigana--prompt-flag t))
-  (when (or event (eq askk-trans--node askk-trans--root))
-    (setq askk-kana--additional-flag t)))
-
-(defun askk-okurigana--prompt-string ()
-  (and askk-okurigana--prompt-flag (char-to-string askk-okurigana-prompt)))
+    (setq askk-okurigana--start (+ (point) (askk--output-length)))
+    (askk--output-commit askk-okurigana-prompt))
+  ;; sticky shift が促音にかかる場合
+  (unless (or event (eq askk-trans--node askk-trans--root))
+    (pop askk--output)
+    (push askk-okurigana-prompt askk-trans--events)))
 
 ;;; Candidate
 
@@ -544,17 +554,6 @@
 (defvar-local askk-cand--index nil)
 (defvar-local askk-cand--overlay nil)
 
-(defun askk-cand--current ()
-  (nth askk-cand--index askk-cand--candidates))
-
-(defun askk-cand--make-overlay ()
-  (let* ((start (1+ (overlay-start askk-preedit--overlay)))
-         (end (+ start (length askk-kana--default-string))))
-    (if (overlayp askk-cand--overlay)
-        (move-overlay askk-cand--overlay start end)
-      (setq askk-cand--overlay (make-overlay start end))
-      (overlay-put askk-cand--overlay 'face 'askk-candidate-preview))))
-
 (defun askk-cand--cleanup ()
   (when (overlayp askk-cand--overlay)
     (delete-overlay askk-cand--overlay))
@@ -562,13 +561,23 @@
   (setq askk-cand--index nil)
   (setq askk-cand--overlay nil))
 
-(defun askk-cand--lookup ()
-  (setq askk-headword--input-string askk-kana--default-string)
+(defun askk-cand--lookup (&optional okurigana-suffix)
+  (setq askk-headword--input-string
+        (apply #'concat
+               (buffer-substring-no-properties (1+ askk-headword--start)
+                                               (or askk-okurigana--start
+                                                   (point)))
+               (nreverse askk--output)))
   (setq askk-headword--string (askk-headword--make))
   (setq askk-okurigana--string
         (and askk-okurigana--event
-             (apply #'string (mapcar #'askk--kata2hira
-                                     askk-kana--additional-string))))
+             (concat (and askk-okurigana--start
+                          (mapcar #'askk--kata2hira
+                                  (buffer-substring-no-properties
+                                   (1+ askk-okurigana--start)
+                                   (point))))
+                     (mapcar #'askk--kata2hira okurigana-suffix))))
+  (setq askk--output nil)
   (setq askk-cand--index 0)
   (setq askk-cand--candidates
         (delete-dups (mapcan (lambda (source)
@@ -602,16 +611,16 @@
 
 (defun askk-delete-candidate ()
   (interactive "*")
-  (let ((candidate (askk-cand--current)))
+  (let ((candidate (nth askk-cand--index askk-cand--candidates)))
     (when (yes-or-no-p (concat "Delete "
                                (askk--format-headword-and-okurigana)
                                "【" (car candidate) "】?"))
       (askk-user-dict--delete-entry askk-headword--string
                                     askk-okurigana--string
                                     candidate)
-      (setq askk-kana--default-string nil)
-      (setq askk-kana--additional-string nil)
-      (setq askk-kana--additional-flag nil)
+      (when askk-okurigana--string
+        (delete-region askk-headword--end (point)))
+      (askk-headword--replace "")
       (askk-kana--normal)
       (funcall askk-candidates-style-function :hide))))
 
@@ -626,7 +635,7 @@
         (askk-user-dict--add-entry askk-headword--string
                                    askk-okurigana--string
                                    candidate)
-        (setq askk-kana--default-string (car candidate))
+        (askk-headword--replace (car candidate))
         (askk-kana--normal))
     (askk-previous-candidate)))
 
@@ -646,8 +655,18 @@
     (funcall askk-candidates-style-function :hide)
     (askk--register-new-candidate))
    (t
-    (setq askk-kana--default-string (car (askk-cand--current)))
+    (askk--preview-candidate)
     (funcall askk-candidates-style-function :show))))
+
+(defun askk--preview-candidate ()
+  (let ((candidate (nth askk-cand--index askk-cand--candidates))
+        (beg (1+ askk-headword--start))
+        (end askk-headword--end))
+    (askk-headword--replace (car candidate))
+    (if (overlayp askk-cand--overlay)
+        (move-overlay askk-cand--overlay beg end)
+      (setq askk-cand--overlay (make-overlay beg end))))
+  (overlay-put askk-cand--overlay 'face 'askk-candidate-preview))
 
 ;;; Kana
 
@@ -669,22 +688,26 @@
   (askk-cand--cleanup))
 
 (defun askk-kana--composing ()
-  (when (eq askk--conversion-mode 'selecting)
-    (setq askk-kana--default-string (concat askk-headword--input-string
-                                            askk-kana--additional-string))
-    (setq askk-kana--additional-string nil)
-    (setq askk-kana--additional-flag nil)
-    (setq askk-kana--last-substring nil)
-    (askk-okurigana--cleanup)
-    (askk-cand--cleanup))
-  (setq askk-headword--start (overlay-start askk-preedit--overlay))
-
   (setq askk--conversion-mode 'composing)
-  (askk--enable-keymap askk-kana-mode-map))
+  (askk--enable-keymap askk-kana-mode-map)
+  (if askk-headword--start
+      (progn
+        (askk-headword--replace askk-headword--input-string
+                                askk-composing-prompt)
+        (set-marker askk-headword--end nil)
+        (setq askk-headword--end nil)
+        (askk-okurigana--cleanup)
+        (askk-cand--cleanup))
+    (askk-headword--start)))
 
 (defun askk-kana--selecting ()
   (setq askk--conversion-mode 'selecting)
-  (askk--enable-keymap askk-kana-selecting-mode-map))
+  (askk--enable-keymap askk-kana-selecting-mode-map)
+  (setq askk-headword--end
+        (set-marker (make-marker) (or askk-okurigana--start (point))))
+  (askk-headword--replace askk-headword--input-string
+                          askk-selecting-prompt)
+  (askk-okurigana--delete-prompt))
 
 (defun askk-kana--handle-normal (event)
   (if (eq event askk-sticky-shift)
@@ -716,9 +739,9 @@
           (askk-trans--transliterate event)
           (when (eq askk-trans--node askk-trans--root)
             (askk-kana--normal)))
-      (unless askk-okurigana--prompt-flag
+      (unless askk-okurigana--start
         (askk-okurigana--start))))
-   ((and askk-okurigana--prompt-flag
+   ((and askk-okurigana--start
          (null askk-okurigana--event)
          (or (<= ?A event ?Z) (<= ?a event ?z)))
     (unless (prog1 (eq (askk-trans--node) askk-trans--root)
@@ -730,14 +753,9 @@
          (null (askk-trans--next-node event))
          (null (askk-trans--next-node event askk-trans--root)))
     (setq event (downcase event))
-    (if (or askk-okurigana--prompt-flag (askk-headword--empty-p))
-        (askk-trans--transliterate event)
-      (if (memq event '(?a ?i ?u ?e ?o))
-          (progn
-            (askk-okurigana--start event)
-            (askk-trans--transliterate event))
-        (askk-trans--transliterate event)
-        (askk-okurigana--start event))))
+    (unless (prog1 (or askk-okurigana--start (askk-headword--empty-p))
+              (askk-trans--transliterate event))
+      (askk-okurigana--start event)))
    (t
     (unless (askk-trans--transliterate event #'ignore)
       (cond
@@ -749,144 +767,92 @@
        (t
         (askk--output-commit event))))))
 
-  (when (and (eq askk--conversion-mode 'composing)
-             (eq (askk-trans--node) askk-trans--root)
-             (or (and askk-okurigana--event
-                      (or (memq event '(?a ?i ?u ?e ?o))
-                          (= event askk-okurigana--event ?n)))
-                 (and (member askk-kana--last-substring
-                              askk-auto-conversion-triggers)
-                      (not (string= askk-kana--last-substring
-                                    askk-kana--default-string))
-                      (setq askk-kana--default-string
-                            (substring
-                             askk-kana--default-string
-                             0 (- (length askk-kana--last-substring))))
-                      (setq askk-kana--additional-string
-                            (concat askk-kana--additional-string
-                                    askk-kana--last-substring))
-                      (setq askk-kana--additional-flag t))))
-    (askk-cand--lookup)
-    (askk-kana--selecting)))
+  (when-let* (((eq askk--conversion-mode 'composing))
+              ((eq askk-trans--node askk-trans--root))
+              (str (pop askk--output)))
+    (when (or (and askk-okurigana--event
+                   (or (memq event '(?a ?i ?u ?e ?o))
+                       (= event askk-okurigana--event ?n)))
+              (and (member str askk-auto-conversion-triggers)
+                   (not (askk-headword--empty-p))))
+      (askk-cand--lookup (and askk-okurigana--event str))
+      (askk-kana--selecting))
+    (push str askk--output)))
 
 (defvar askk--conversion-mode-handlers
   '((normal . askk-kana--handle-normal)
     (composing . askk-kana--handle-composing)))
 
+(defun askk-kana--handle-event ()
+  (interactive "*")
+  (funcall (alist-get askk--conversion-mode askk--conversion-mode-handlers)
+           last-command-event)
+  (askk--output-flush)
+  (askk-trans--show-or-cleanup-events)
+  (when (eq askk--conversion-mode 'selecting)
+    (askk--handle-candidates)))
+
+(put 'askk-kana--handle-event
+     'delete-selection 'delete-selection-uses-region-p)
+
 (defun askk-kana--commit ()
   (interactive "*")
   (if (eq askk--conversion-mode 'selecting)
-      (progn
+      (let ((candidate (nth askk-cand--index askk-cand--candidates)))
         (askk-user-dict--add-entry askk-headword--string
                                    askk-okurigana--string
-                                   (askk-cand--current))
+                                   candidate)
         (funcall askk-candidates-style-function :hide))
     (askk-trans--commit))
   (unless (eq askk--conversion-mode 'normal)
-    (askk-kana--normal)))
+    (askk-kana--normal))
+  (askk--output-flush))
+
+(defun askk-commit-and-handle-event ()
+  (interactive "*")
+  (askk-kana--commit)
+  (askk-kana--handle-event))
+
+(defun askk-newline (&optional _arg _interactive)
+  (interactive "*P\np")
+  (if (minibufferp)
+      (exit-minibuffer)
+    (askk-kana--commit)
+    (call-interactively #'newline)))
+
+(put 'askk-newline 'delete-selection t)
 
 (defun askk-delete-backward-char (n)
   (interactive "p")
   (when (eq askk--conversion-mode 'selecting)
     (askk-kana--commit))
-
-  ;; events の最後が okurigana prompt
-  (when (and (> n 0)
-             askk-okurigana--prompt-flag
-             (not askk-kana--additional-flag))
-    (setq n (1- n))
-    (askk-okurigana--cleanup))
-
-  (let ((new_n (- n (length askk-trans--events))))
-    (if (< new_n 0)
-        (progn
-          (setq askk-trans--events (nthcdr n askk-trans--events))
-          (setq askk-trans--node askk-trans--root)
-          (dolist (event (reverse askk-trans--events))
-            (setq askk-trans--node (askk-trans--next-node event))))
-      (setq askk-trans--events nil)
+  (let ((remaining (- n (length askk-trans--events))))
+    (when (and (> n 0)
+               askk-okurigana--start
+               (not (eq (char-after askk-okurigana--start)
+                        askk-okurigana-prompt)))
+      ;; sticky shift が促音にかかっている場合で
+      ;; askk-okurigana-prompt が askk-trans--events に push されている状態
+      (setq askk-okurigana--start nil)
+      (setq askk-okurigana--event nil))
+    (if (< remaining 0)
+        (dotimes (_ n)
+          (pop askk-trans--events))
       (setq askk-trans--node askk-trans--root)
-      (setq n new_n)
-
-      (when (> n 0)
-        (setq new_n (- n (length askk-kana--additional-string)))
-        (if (< new_n 0)
-            (setq askk-kana--additional-string
-                  (substring askk-kana--additional-string 0 (- n)))
-          (setq askk-kana--additional-string nil))
-        (setq n new_n)
-
-        ;; default string と additional string の間が okurigana prompt
-        (when (and (> n 0) askk-okurigana--prompt-flag)
-          (setq n (1- n))
-          (askk-okurigana--cleanup))
-
-        (when (and (> n 0) askk-kana--default-string)
-          (setq new_n (- n (length askk-kana--default-string)))
-          (if (< new_n 0)
-              (setq askk-kana--default-string
-                    (substring askk-kana--default-string 0 (- n)))
-            (setq askk-kana--default-string nil))
-          (setq n new_n))
-
-        (when (and (> n 0) (eq askk--conversion-mode 'composing))
-          (setq n (1- n))
-          (askk-kana--normal))
-
-        (when (> n 0)
-          (funcall-interactively #'delete-backward-char n))))))
-
-;;; Input method
-
-(defun askk-input-method (key)
-  (cond
-   ((or buffer-read-only
-        overriding-terminal-local-map
-        overriding-local-map
-        (eq askk--input-mode 'ascii))
-    (list key))
-   ((eq askk--input-mode 'fullwidth-ascii)
-    (list (or (aref askk-fullwidth-ascii-table key) key)))
-   (t
-    (askk-preedit--setup)
-    (with-silent-modifications
-      (unwind-protect
-          (let ((input-method-function nil)
-                (echo-keystrokes 0))
-            (askk--handle-event key)
-            (while (not (and (eq askk--conversion-mode 'normal)
-                             (eq (askk-trans--node) askk-trans--root)))
-              (askk--handle-event (read-event)))
-            (askk-preedit--to-list))
-        (askk-preedit--teardown))))))
-
-(defun askk--handle-event (event)
-  (let ((command (keymap-lookup (askk--current-keymap)
-                                (single-key-description event))))
-    (cond
-     (command
-      (setq last-command-event event)
-      (setq last-command this-command)
-      (setq this-command command)
-      (command-execute command))
-     ((or (not (and (characterp event) (<= ?\s event 255) (/= event 127)))
-          (eq askk--conversion-mode 'selecting)
-          (and (eq askk--conversion-mode 'normal)
-               (null (askk-trans--next-node event))
-               (askk-trans--node-value askk-trans--node)))
-      (askk-kana--commit)
-      (askk--make-event-unread event))
-     (t
-      (funcall (alist-get askk--conversion-mode askk--conversion-mode-handlers)
-               event)
-      (askk-preedit--update)
-      (when (eq askk--conversion-mode 'selecting)
-        (askk--handle-candidates)))))
-  (askk-preedit--update))
-
-(defun askk--make-event-unread (event)
-  (setq unread-command-events
-        (append (listify-key-sequence (list event)) unread-command-events)))
+      (setq askk-trans--events nil)
+      (when-let* ((askk-headword--start)
+                  (pos (point))
+                  (new-pos (- pos remaining)))
+        (when (and askk-okurigana--start
+                   (<= new-pos (1+ askk-okurigana--start) pos))
+          (setq askk-okurigana--event nil)
+          (when (<= new-pos askk-okurigana--start)
+            (setq askk-okurigana--start nil)))
+        (when (<= new-pos askk-headword--start pos)
+          (setq remaining (1- remaining))
+          (askk-kana--normal)))
+      (funcall-interactively #'delete-backward-char remaining))
+    (askk-trans--show-or-cleanup-events)))
 
 ;;; Completion
 
@@ -921,9 +887,11 @@ corfu から :display-sort-function が使われるため見出し語は登録�
     (when (eq (selected-window) (minibuffer-window))
       (add-hook 'minibuffer-exit-hook #'askk-exit-from-minibuffer))
     (add-hook 'completion-at-point-functions #'askk-completion-at-point nil 't)
+    (add-hook 'post-command-hook #'askk-trans--cleanup-if-moved nil t)
     (add-hook 'window-selection-change-functions #'askk--restore-keymap nil t))
    (t
     (remove-hook 'window-selection-change-functions #'askk--restore-keymap t)
+    (remove-hook 'post-command-hook #'askk-trans--cleanup-if-moved t)
     (remove-hook 'completion-at-point-functions #'askk-completion-at-point t)
 
     (funcall askk-candidates-style-function :cleanup)
@@ -931,7 +899,6 @@ corfu から :display-sort-function が使われるため見出し語は登録�
     (askk-headword--cleanup)
     (askk-okurigana--cleanup)
     (askk-cand--cleanup)
-    (askk-preedit--cleanup)
     (setq askk--input-mode nil))))
 
 (defun askk-exit-from-minibuffer ()
@@ -953,10 +920,8 @@ corfu から :display-sort-function が使われるため見出し語は登録�
    (askk-cursor-color-mode
     (or askk-cursor--default-color
         (setq askk-cursor--default-color (face-attribute 'cursor :background)))
-    (add-hook 'askk--input-mode-hook #'askk-cursor--update)
     (add-hook 'post-command-hook #'askk-cursor--update))
    (t
-    (remove-hook 'askk--input-mode-hook #'askk-cursor--update)
     (remove-hook 'post-command-hook #'askk-cursor--update))))
 
 (defun askk-cursor--update ()
@@ -976,12 +941,10 @@ corfu から :display-sort-function が使われるため見出し語は登録�
 
 (defun askk-activate (_input-method)
   (setq deactivate-current-input-method-function #'askk-deactivate)
-  (askk-mode)
-  (setq-local input-method-function #'askk-input-method))
+  (askk-mode))
 
 (defun askk-deactivate ()
-  (askk-mode -1)
-  (kill-local-variable 'input-method-function))
+  (askk-mode -1))
 
 (provide 'askk)
 ;;; askk.el ends here
