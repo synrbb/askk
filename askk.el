@@ -544,7 +544,7 @@
 
 ;;; Candidate
 
-(defun askk-candidates-inplace-style (method)
+(defun askk-candidates-inplace-style (method &rest _)
   (and (eq method :page-size) 1))
 
 (defun askk--candidates-page-size ()
@@ -656,7 +656,10 @@
     (askk--register-new-candidate))
    (t
     (askk--preview-candidate)
-    (funcall askk-candidates-style-function :show))))
+    (funcall askk-candidates-style-function :show
+             (1+ askk-headword--start)
+             askk-cand--candidates
+             askk-cand--index))))
 
 (defun askk--preview-candidate ()
   (let ((candidate (nth askk-cand--index askk-cand--candidates))
