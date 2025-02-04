@@ -544,15 +544,28 @@
 
 ;;; Candidate
 
-(defun askk-candidates-inplace-style (method &rest _)
-  (and (eq method :page-size) 1))
-
-(defun askk--candidates-page-size ()
-  (funcall askk-candidates-style-function :page-size))
-
 (defvar-local askk-cand--candidates nil)
 (defvar-local askk-cand--index nil)
 (defvar-local askk-cand--overlay nil)
+
+(defun askk-candidates-inplace-style (method &rest _)
+  (and (eq method :page-size) 1))
+
+(defun askk-candidates--page-size ()
+  (funcall askk-candidates-style-function :page-size))
+
+(defun askk-candidates--show ()
+  (funcall askk-candidates-style-function :show
+           (1+ askk-headword--start)
+           askk-cand--candidates
+           askk-cand--index))
+
+(defun askk-candidates--hide ()
+  (funcall askk-candidates-style-function :hide))
+
+(defun askk-candidates--cleanup ()
+  (askk-cand--cleanup)
+  (funcall askk-candidates-style-function :cleanup))
 
 (defun askk-cand--cleanup ()
   (when (overlayp askk-cand--overlay)
@@ -599,13 +612,13 @@
 
 (defun askk-candidates-next-page ()
   (interactive "*")
-  (setq askk-cand--index (min (+ askk-cand--index (askk--candidates-page-size))
+  (setq askk-cand--index (min (+ askk-cand--index (askk-candidates--page-size))
                               (length askk-cand--candidates)))
   (askk--handle-candidates))
 
 (defun askk-candidates-previous-page ()
   (interactive "*")
-  (setq askk-cand--index (max (- askk-cand--index (askk--candidates-page-size))
+  (setq askk-cand--index (max (- askk-cand--index (askk-candidates--page-size))
                               -1))
   (askk--handle-candidates))
 
@@ -622,7 +635,7 @@
         (delete-region askk-headword--end (point)))
       (askk-headword--replace "")
       (askk-kana--normal)
-      (funcall askk-candidates-style-function :hide))))
+      (askk-candidates--hide))))
 
 (defun askk--register-new-candidate ()
   (if-let* ((str (read-string (concat "Register "
@@ -650,16 +663,13 @@
   (cond
    ((= askk-cand--index -1)
     (askk-kana--composing)
-    (funcall askk-candidates-style-function :hide))
+    (askk-candidates--hide))
    ((= askk-cand--index (length askk-cand--candidates))
-    (funcall askk-candidates-style-function :hide)
+    (askk-candidates--hide)
     (askk--register-new-candidate))
    (t
     (askk--preview-candidate)
-    (funcall askk-candidates-style-function :show
-             (1+ askk-headword--start)
-             askk-cand--candidates
-             askk-cand--index))))
+    (askk-candidates--show))))
 
 (defun askk--preview-candidate ()
   (let ((candidate (nth askk-cand--index askk-cand--candidates))
@@ -805,7 +815,7 @@
         (askk-user-dict--add-entry askk-headword--string
                                    askk-okurigana--string
                                    candidate)
-        (funcall askk-candidates-style-function :hide))
+        (askk-candidates--hide))
     (askk-trans--commit))
   (unless (eq askk--conversion-mode 'normal)
     (askk-kana--normal))
@@ -897,11 +907,10 @@ corfu から :display-sort-function が使われるため見出し語は登録�
     (remove-hook 'post-command-hook #'askk-trans--cleanup-if-moved t)
     (remove-hook 'completion-at-point-functions #'askk-completion-at-point t)
 
-    (funcall askk-candidates-style-function :cleanup)
     (askk-trans--cleanup)
     (askk-headword--cleanup)
     (askk-okurigana--cleanup)
-    (askk-cand--cleanup)
+    (askk-candidates--cleanup)
     (setq askk--input-mode nil))))
 
 (defun askk-exit-from-minibuffer ()
