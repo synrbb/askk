@@ -44,7 +44,7 @@
   "▽モードのプロンプト。"
   :type 'character)
 
-(defcustom askk-selecting-prompt ?▼
+(defcustom askk-converting-prompt ?▼
   "▼モードのプロンプト。"
   :type 'character)
 
@@ -232,7 +232,7 @@
       map))
   "Keymap for normal or composing conversion mode.")
 
-(defvar askk-kana-selecting-mode-map
+(defvar askk-converting-mode-map
   (eval-when-compile
     (let ((map (define-keymap
                  :full t
@@ -254,7 +254,7 @@
           (keymap-set map key #'askk-commit-and-handle-event))
         (setq c (1+ c)))
       map))
-  "Keymap for selecting conversion mode.")
+  "Keymap for converting conversion mode.")
 
 (defvar askk--input-mode-alist
   '((hiragana
@@ -303,8 +303,8 @@
   (setf (alist-get 'askk-mode minor-mode-map-alist) keymap))
 
 (defun askk--current-keymap ()
-  (if (eq askk--conversion-mode 'selecting)
-      askk-kana-selecting-mode-map
+  (if (eq askk--conversion-mode 'converting)
+      askk-converting-mode-map
     (symbol-value (plist-get (askk--input-mode-plist) :keymap))))
 
 (defun askk-hiragana-mode ()
@@ -703,13 +703,13 @@
         (askk-cand--cleanup))
     (askk-headword--start)))
 
-(defun askk-kana--selecting ()
-  (setq askk--conversion-mode 'selecting)
-  (askk--enable-keymap askk-kana-selecting-mode-map)
+(defun askk-kana--converting ()
+  (setq askk--conversion-mode 'converting)
+  (askk--enable-keymap askk-converting-mode-map)
   (setq askk-headword--end
         (set-marker (make-marker) (or askk-okurigana--start (point))))
   (askk-headword--replace askk-headword--input-string
-                          askk-selecting-prompt)
+                          askk-converting-prompt)
   (askk-okurigana--delete-prompt))
 
 (defun askk-kana--handle-normal (event)
@@ -731,7 +731,7 @@
     (if (askk-headword--empty-p)
         (askk-kana--normal)
       (askk-cand--lookup)
-      (askk-kana--selecting)))
+      (askk-kana--converting)))
    (askk--abbrev-flag
     (askk--output-commit event))
    ((eq event askk-sticky-shift)
@@ -766,7 +766,7 @@
         (unless (prog1 (askk-headword--empty-p)
                   (askk--output-commit event))
           (askk-cand--lookup)
-          (askk-kana--selecting)))
+          (askk-kana--converting)))
        (t
         (askk--output-commit event))))))
 
@@ -779,7 +779,7 @@
               (and (member str askk-auto-conversion-triggers)
                    (not (askk-headword--empty-p))))
       (askk-cand--lookup (and askk-okurigana--event str))
-      (askk-kana--selecting))
+      (askk-kana--converting))
     (push str askk--output)))
 
 (defvar askk--conversion-mode-handlers
@@ -792,7 +792,7 @@
            last-command-event)
   (askk--output-flush)
   (askk-trans--show-or-cleanup-events)
-  (when (eq askk--conversion-mode 'selecting)
+  (when (eq askk--conversion-mode 'converting)
     (askk--handle-candidates)))
 
 (put 'askk-kana--handle-event
@@ -800,7 +800,7 @@
 
 (defun askk-kana--commit ()
   (interactive "*")
-  (if (eq askk--conversion-mode 'selecting)
+  (if (eq askk--conversion-mode 'converting)
       (let ((candidate (nth askk-cand--index askk-cand--candidates)))
         (askk-user-dict--add-entry askk-headword--string
                                    askk-okurigana--string
@@ -827,7 +827,7 @@
 
 (defun askk-delete-backward-char (n)
   (interactive "p")
-  (when (eq askk--conversion-mode 'selecting)
+  (when (eq askk--conversion-mode 'converting)
     (askk-kana--commit))
   (let ((remaining (- n (length askk-trans--events))))
     (when (and (> n 0)

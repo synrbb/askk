@@ -348,7 +348,7 @@
       (askk-tests-trigger-events "n "))
     (should (equal (buffer-string) "▼ン"))
     (should-not askk-trans--events)
-    (should (eq askk--conversion-mode 'selecting))))
+    (should (eq askk--conversion-mode 'converting))))
 
 (ert-deftest askk-tests-handle-composing-space-kan ()
   (askk-tests-with-output-buffer #'askk-kana--composing
@@ -356,7 +356,7 @@
       (askk-tests-trigger-events "kan "))
     (should (equal (buffer-string) "▼缶"))
     (should-not askk-trans--events)
-    (should (eq askk--conversion-mode 'selecting))))
+    (should (eq askk--conversion-mode 'converting))))
 
 (ert-deftest askk-tests-handle-composing-abbrev ()
   (askk-tests-with-output-buffer #'askk-kana--composing
@@ -436,7 +436,7 @@
       (askk-tests-trigger-events "i"))
     (should (equal (buffer-string) "▼開き"))
     (should-not askk-trans--events)
-    (should (eq askk--conversion-mode 'selecting))))
+    (should (eq askk--conversion-mode 'converting))))
 
 (ert-deftest askk-tests-handle-composing-aKI ()
   (askk-tests-with-output-buffer #'askk-kana--composing
@@ -449,7 +449,7 @@
     (askk-tests-with-lookup '("あi" . ("合"))
       (askk-tests-trigger-events "aI"))
     (should (equal (buffer-string) "▼合い"))
-    (should (eq askk--conversion-mode 'selecting))))
+    (should (eq askk--conversion-mode 'converting))))
 
 (ert-deftest askk-tests-handle-composing-auto ()
   (askk-tests-with-output-buffer #'askk-kana--composing
@@ -460,7 +460,7 @@
       (askk-tests-trigger-events "wo"))
     (should (equal (buffer-string) "▼愛を"))
     (should-not askk-trans--events)
-    (should (eq askk--conversion-mode 'selecting))))
+    (should (eq askk--conversion-mode 'converting))))
 
 (ert-deftest askk-tests-handle-composing-auto-empty ()
   (askk-tests-with-output-buffer #'askk-kana--composing
@@ -481,7 +481,7 @@
       (askk-tests-trigger-events "si>"))
     (should (equal (buffer-string) "▼私"))
     (should-not askk-trans--events)
-    (should (eq askk--conversion-mode 'selecting))))
+    (should (eq askk--conversion-mode 'converting))))
 
 (ert-deftest askk-tests-handle-composing-nl ()
   (askk-tests-with-output-buffer #'askk-kana--composing
