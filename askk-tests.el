@@ -8,6 +8,12 @@
 (require 'ert)
 (require 'askk)
 
+(ert-deftest askk-tests-input-mode-color ()
+  (let ((askk--input-mode 'hiragana))
+    (should (equal (askk--input-mode-color) "#cb4b16")))
+  (let ((askk--abbrev-flag t))
+    (should (equal (askk--input-mode-color) "#268bd2"))))
+
 (ert-deftest askk-tests-trans-tree ()
   (let ((tree (askk-trans--node-make)))
     (askk-trans--node-insert tree "a" '("あ"))

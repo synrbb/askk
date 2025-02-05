@@ -287,7 +287,9 @@
   (plist-get (askk--input-mode-plist) :color))
 
 (defun askk--input-mode-plist (&optional input-mode)
-  (alist-get (or input-mode askk--input-mode) askk--input-mode-alist))
+  (alist-get (or input-mode
+                 (if askk--abbrev-flag 'abbrev askk--input-mode))
+             askk--input-mode-alist))
 
 (defun askk--update-input-mode (&optional input-mode)
   (when (and input-mode (not (eq input-mode 'abbrev)))
